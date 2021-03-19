@@ -1,0 +1,36 @@
+{
+    "name": "ayesh/case-insensitive-array",
+    "description": "Class to store and access data in a case-insensitive fashion, while maintaining the integrity and functionality of a regular array.",
+    "license": "MIT",
+    "keywords": ["array", "array access", "arrayaccess", "iterator", "case insensitive"],
+    "homepage": "https://github.com/Ayesh/CaseInsensitiveArray",
+    "authors": [
+        {
+            "name": "Ayesh Karunaratne",
+            "email": "ayesh@ayesh.me"
+        }
+    ],
+    "require": {
+        "php": "^7.3 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.2",
+        "phpstan/phpstan": "^0.12.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ayesh\\CaseInsensitiveArray\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ayesh\\CaseInsensitiveArray\\Test\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": [
+            " phpunit --coverage-clover=coverage.xml",
+            " phpstan analyse src --level 7"
+        ]
+    }
+}

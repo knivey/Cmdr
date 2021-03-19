@@ -1,0 +1,71 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "559d62d9ab1bc6000c9154d41535e823",
+    "packages": [
+        {
+            "name": "ayesh/case-insensitive-array",
+            "version": "v1.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Ayesh/case-insensitive-array.git",
+                "reference": "db6127683a94474f976ccf1e8bce2bbfe5002359"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Ayesh/case-insensitive-array/zipball/db6127683a94474f976ccf1e8bce2bbfe5002359",
+                "reference": "db6127683a94474f976ccf1e8bce2bbfe5002359",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.3 || ^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^0.12.29",
+                "phpunit/phpunit": "^9.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ayesh\\CaseInsensitiveArray\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ayesh Karunaratne",
+                    "email": "ayesh@ayesh.me"
+                }
+            ],
+            "description": "Class to store and access data in a case-insensitive fashion, while maintaining the integrity and functionality of a regular array.",
+            "homepage": "https://github.com/Ayesh/CaseInsensitiveArray",
+            "keywords": [
+                "ArrayAccess",
+                "array",
+                "array access",
+                "case insensitive",
+                "iterator"
+            ],
+            "support": {
+                "issues": "https://github.com/Ayesh/case-insensitive-array/issues",
+                "source": "https://github.com/Ayesh/case-insensitive-array/tree/v1.4.0"
+            },
+            "time": "2020-12-18T11:26:14+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.0.0"
+}

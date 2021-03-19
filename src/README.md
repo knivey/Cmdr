@@ -1,0 +1,1 @@
+This is just a very basic library to help with command routing on an IRC bot

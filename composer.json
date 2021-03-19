@@ -1,0 +1,18 @@
+{
+  "name": "knivey/cmdr",
+  "description": "Command router for IRC bots",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": { "knivey\\cmdr\\": "src" }
+  },
+  "authors": [
+    {
+      "name": "knivey",
+      "email": "knivey@botops.net"
+    }
+  ],
+  "require": {
+    "ayesh/case-insensitive-array": "^1.4"
+  }
+}
