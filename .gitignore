@@ -1,2 +1,4 @@
 # Project exclude paths
-/vendor/composer/
+/vendor/
+composer.lock
+.idea
