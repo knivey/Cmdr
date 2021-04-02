@@ -12,11 +12,11 @@ class Cmdr
         $this->cmds = new CIArray();
     }
 
-    function add(string $command, callable $method, array $callargs, string $syntax = '') {
+    function add(string $command, callable $method, array $callArgs = [], string $syntax = '') {
         if (str_contains($command, '#')) {
             throw new \Exception('Command name cannot contain #');
         }
-        $this->cmds[$command] = new Cmd($command, $method, $callargs, $syntax);
+        $this->cmds[$command] = new Cmd($command, $method, $callArgs, $syntax);
     }
 
     function get(string $command, string $text) : Request {
@@ -26,9 +26,9 @@ class Cmdr
 	    return new Request($args, $cmd);
     }
 
-    function call(string $command, string $text) {
+    function call(string $command, string $text, array $extraArgs) {
 	    $req = $this->get($command, $text);
-	    call_user_func_array($req->cmd->method, [$req->cmd->callargs, $req]);
+	    call_user_func_array($req->cmd->method, [...$req->cmd->callArgs, ...$extraArgs, $req]);
     }
 
 }
