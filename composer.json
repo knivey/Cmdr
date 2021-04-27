@@ -3,7 +3,6 @@
   "description": "Command router for IRC bots",
   "minimum-stability": "stable",
   "license": "MIT",
-  "version": "1.0",
   "autoload": {
     "psr-4": { "knivey\\cmdr\\": "src" }
   },
