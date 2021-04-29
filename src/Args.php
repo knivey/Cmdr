@@ -1,17 +1,6 @@
 <?php
 namespace knivey\cmdr;
 
-/**
- * Takes $txt and creates (argc, argv) multiple spaces ignored
- * @param string $txt
- * @return array
- */
-function niceArgs(string $txt) : array {
-    $txt = explode(' ', $txt);
-    $txt = array_filter($txt);
-    return Array(count($txt), $txt);
-}
-
 
 /**
  * Parse syntax and store arguments to command
@@ -22,24 +11,29 @@ function niceArgs(string $txt) : array {
  *  [arg]... optional multiword arg, must be last in list
  * The arg name must not contain []<> or whitespace
  */
-class Args implements \ArrayAccess
+class Args implements \ArrayAccess, \Countable
 {
     public string $syntax;
     /**
      * @var Arg[] $args
      */
-    public array $args = Array();
+    protected array $args = Array();
 
     /**
-     * CmdArgs constructor.
+     * @var Arg[] $parsed
+     */
+    protected array $parsed = Array();
+
+    /**
+     * constructor.
      * @param string $syntax
-     * @throws SyntaxException Will throw if syntax isnt valid
+     * @throws SyntaxException Will throw if syntax is invalid
      */
     function __construct(string $syntax)
     {
         $this->syntax = $syntax;
-        list($argc, $argv) = niceArgs($syntax);
-        if ($argc == 0) {
+        $argv = array_filter(explode(' ', $syntax));
+        if (count($argv) == 0) {
             return;
         }
         foreach ($argv as $k => $a) {
@@ -82,11 +76,16 @@ class Args implements \ArrayAccess
     }
 
     /**
+     * Parse arguments given to a command using its syntax rules
      * @param string $msg
+     * @return Args Returns a cloned object
      * @throws ParseException throws exception if required args arent provided
      */
-    public function parse(string $msg) {
-        foreach ($this->args as &$arg) {
+    public function parse(string $msg) : Args {
+        $this->parsed = [];
+        foreach ($this->args as $k => $v)
+            $this->parsed[$k] = clone $v;
+        foreach ($this->parsed as &$arg) {
             if($arg->required && trim($msg) == '') {
                 throw new ParseException("Missing a required arg: $arg->name");
             }
@@ -100,10 +99,11 @@ class Args implements \ArrayAccess
                 }
             }
         }
+        return clone $this;
     }
 
     public function getArg(string $name): ?Arg {
-        foreach ($this->args as &$arg) {
+        foreach ($this->parsed as &$arg) {
             if ($arg->name == $name) {
                 if($arg->val == null) {
                     return null;
@@ -120,9 +120,9 @@ class Args implements \ArrayAccess
     }
     public function offsetExists($offset) {
         if(is_numeric($offset)) {
-            return isset($this->args[$offset]) && $this->args[$offset]->val != null;
+            return isset($this->parsed[$offset]) && $this->parsed[$offset]->val != null;
         }
-        foreach ($this->args as &$arg) {
+        foreach ($this->parsed as &$arg) {
             if ($arg->name == $offset && $arg->val != null) {
                 return true;
             }
@@ -134,8 +134,8 @@ class Args implements \ArrayAccess
     }
     public function offsetGet($offset): ?string {
         if(is_numeric($offset)) {
-            if(isset($this->args[$offset]) && $this->args[$offset]->val != null) {
-                return $this->args[$offset]->val;
+            if(isset($this->parsed[$offset]) && $this->parsed[$offset]->val != null) {
+                return $this->parsed[$offset]->val;
             }
             return null;
         }
@@ -144,6 +144,10 @@ class Args implements \ArrayAccess
             return $arg->val;
         }
         return null;
+    }
+
+    public function count() {
+        return count($this->parsed);
     }
 }
 

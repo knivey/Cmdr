@@ -3,6 +3,8 @@
 namespace knivey\cmdr\test;
 
 use knivey\cmdr\Args;
+use knivey\cmdr\ParseException;
+use knivey\cmdr\SyntaxException;
 use PHPUnit\Framework\TestCase;
 
 class ArgsTest extends TestCase
@@ -10,25 +12,27 @@ class ArgsTest extends TestCase
     function testNoArgs()
     {
         $args = new Args('');
-        $this->assertEmpty($args->args);
+        $this->assertEmpty($args);
+        $this->assertCount(0, $args);
         $args->parse("arst tsra moo");
-        $this->assertEmpty($args->args);
+        $this->assertEmpty($args);
+        $this->assertCount(0, $args);
     }
 
     function testReqArg()
     {
         $args = new Args('<foo>');
         $args->parse('moo boo poo');
-        $this->assertEquals('moo', $args->getArg('foo')->val);
-        $this->assertEquals('moo', $args->args[0]->val);
+        $this->assertEquals('moo', $args->getArg('foo'));
+        $this->assertCount(1, $args);
 
         $args = new Args('<foo>');
         $args->parse('m)_M@"');
-        $this->assertEquals('m)_M@"', $args->args[0]->val);
-        $this->assertEquals('m)_M@"', $args->getArg('foo')->val);
+        $this->assertEquals('m)_M@"', $args->getArg('foo'));
+        $this->assertCount(1, $args);
 
-        $this->expectException('Exception');
         $args = new Args('<foo>');
+        $this->expectException(ParseException::class);
         $args->parse('');
     }
 
@@ -49,18 +53,18 @@ class ArgsTest extends TestCase
         $args = new Args('<foo> [bar]');
         $args->parse('moo boo poo');
         $this->assertEquals('moo', $args->getArg('foo'));
-        $this->assertEquals('moo', $args->args[0]);
         $this->assertEquals('boo', $args->getArg('bar'));
-        $this->assertEquals('boo', $args->args[1]);
-        $this->assertCount(2, $args->args);
+        $this->assertCount(2, $args);
 
         $args = new Args('<foo> [bar]');
         $args->parse('moo');
         $this->assertEquals('moo', $args->getArg('foo'));
         $this->assertEquals('', $args->getArg('bar'));
+        //Even tho its not parsed its accessible as null str
+        $this->assertCount(2, $args);
 
-        $this->expectException('Exception');
         $args = new Args('<foo> [bar]');
+        $this->expectException(ParseException::class);
         $args->parse('');
     }
 
@@ -69,8 +73,11 @@ class ArgsTest extends TestCase
         $args = new Args("<Account> <barf> [a_r]");
         $args->parse('moo boo poo');
         $this->assertEquals('moo', $args['Account']);
+        $this->assertEquals('moo', $args[0]);
+        $this->assertEquals('boo', $args['barf']);
         $this->assertEquals('boo', $args[1]);
         $this->assertEquals('poo', $args['a_r']);
+        $this->assertEquals('poo', $args[2]);
         $this->assertEquals(null, $args['a']);
         $this->assertEquals(null, $args[5]);
         $this->assertTrue(isset($args['a_r']));
@@ -94,7 +101,7 @@ class ArgsTest extends TestCase
         $args->parse('moo');
         $this->assertEquals('moo', $args->getArg('foo'));
 
-        $this->expectException('Exception');
+        $this->expectException(ParseException::class);
         $args = new Args('<foo>...');
         $args->parse('');
     }
@@ -114,19 +121,19 @@ class ArgsTest extends TestCase
         $this->assertEquals('', $args->getArg('foo'));
     }
 
-    function testOptbeforeReq()
+    function testOptBeforeReq()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('[bar] <foo>');
     }
 
-    function testOptbeforeReqMulti()
+    function testOptBeforeReqMulti()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('[bar] <foo>...');
     }
 
-    function testOptbeforeOpt()
+    function testOptBeforeOpt()
     {
         $args = new Args('[bar] [foo]');
         $args->parse('test');
@@ -137,7 +144,7 @@ class ArgsTest extends TestCase
         $this->assertEquals('moo', $args['foo']);
     }
 
-    function testOptbeforeOptMulti()
+    function testOptBeforeOptMulti()
     {
         $args = new Args('[bar] [foo] [moo]...');
         $args->parse('test');
@@ -154,58 +161,81 @@ class ArgsTest extends TestCase
         $this->assertEquals('blah blah blah', $args['moo']);
     }
 
-    function testOptbeforeOptMultiReq()
+    function testOptBeforeOptMultiReq()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('[bar] [foo]... <moo>');
     }
 
-    function testMultibefore()
+    function testMultiBefore()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('[foo]... [bar]');
     }
 
-    function testMultibefore2()
+    function testMultiBefore2()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('<bar>... [foo]');
     }
 
-    function testMultibefore3()
+    function testMultiBefore3()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('<bar>... <foo>');
     }
 
+    function testMultiAfter()
+    {
+        $args = new Args('<foo> <moo> <bar>... ');
+        $args->parse('test zoo blahr blahz blah');
+        $this->assertEquals('test', $args['foo']);
+        $this->assertEquals('zoo', $args['moo']);
+        $this->assertEquals('blahr blahz blah', $args['bar']);
+    }
+
+    function testMissingSecReqArg()
+    {
+        $args = new Args('<foo> <blah>');
+        $this->expectException(ParseException::class);
+        $args->parse('moo');
+    }
+
+    //Exception tests all need own method
     function testInvalidSyntax()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('<foo>>');
     }
 
     function testInvalidSyntax2()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('foo');
     }
 
     function testInalidSyntax3()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('<[arst]>');
     }
 
     function testInvalidSyntax4()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('[<arst>]');
     }
 
     function testInvalidSyntax5()
     {
-        $this->expectException('Exception');
+        $this->expectException(SyntaxException::class);
         $args = new Args('<moo lol>');
+    }
+
+    function testInvalidSyntax6()
+    {
+        $this->expectException(SyntaxException::class);
+        $args = new Args('<foo><bar>');
     }
 
     function testValidSyntax1()
@@ -213,16 +243,16 @@ class ArgsTest extends TestCase
         $args = new Args("<Account|Chan> <OldMod.OldSetName> <NewMod.NewSetName> [a_r]");
         $args->parse('moo boo poo woo');
         $this->assertEquals('moo', $args->getArg('Account|Chan'));
-        $this->assertEquals('boo', $args->args[1]);
+        $this->assertEquals('boo', $args[1]);
         $this->assertEquals('poo', $args->getArg('NewMod.NewSetName'));
         $this->assertEquals('woo', $args->getArg('a_r'));
-        $this->assertCount(4, $args->args);
+        $this->assertCount(4, $args);
     }
 
     function testArgWhenNotReq()
     {
         $args = new Args("");
         $args->parse('moo boo poo woo');
-        $this->assertCount(0, $args->args);
+        $this->assertCount(0, $args);
     }
 }
