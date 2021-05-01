@@ -45,7 +45,7 @@ class CmdrTest extends TestCase
         $lol = function ($req) use(&$cnt) {
             $this->assertInstanceOf(Request::class, $req);
             $this->assertEquals('abc def', $req->args['stuff']);
-            $this->assertEquals(['--bar'], $req->args->getOpts());
+            $this->assertTrue($req->args->getOpt('--bar'));
             $cnt++;
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...', opts: ['--bar']);
