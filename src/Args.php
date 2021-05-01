@@ -13,7 +13,6 @@ namespace knivey\cmdr;
  */
 class Args implements \ArrayAccess, \Countable
 {
-    public string $syntax;
     /**
      * @var Arg[] $args
      */
@@ -25,13 +24,19 @@ class Args implements \ArrayAccess, \Countable
     protected array $parsed = Array();
 
     /**
+     * @var array $parsedOpts
+     */
+    protected array $parsedOpts = Array();
+
+    /**
      * constructor.
      * @param string $syntax
+     * @param array $opts
      * @throws SyntaxException Will throw if syntax is invalid
      */
-    function __construct(string $syntax)
+    function __construct(public string $syntax, protected array $opts = [])
     {
-        $this->syntax = $syntax;
+        $this->opts = array_map('\strtolower', $this->opts);
         $argv = array_filter(explode(' ', $syntax));
         if (count($argv) == 0) {
             return;
@@ -82,6 +87,17 @@ class Args implements \ArrayAccess, \Countable
      * @throws ParseException throws exception if required args arent provided
      */
     public function parse(string $msg) : Args {
+        $this->parsedOpts = [];
+        $msg = explode(' ', $msg);
+        $msgb = [];
+        foreach ($msg as $w) {
+            if(in_array($w, $this->opts))
+                $this->parsedOpts[$w] = $w;
+            else
+                $msgb[] = $w;
+        }
+        $msg = implode(' ', $msgb);
+
         $this->parsed = [];
         foreach ($this->args as $k => $v)
             $this->parsed[$k] = clone $v;
@@ -100,6 +116,14 @@ class Args implements \ArrayAccess, \Countable
             }
         }
         return clone $this;
+    }
+
+    public function getOpts() {
+        return $this->parsedOpts;
+    }
+
+    public function getOpt($name) : bool {
+        return isset($this->parsedOpts[strtolower($name)]);
     }
 
     public function getArg(string $name): ?Arg {

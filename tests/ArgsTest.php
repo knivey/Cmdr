@@ -255,4 +255,42 @@ class ArgsTest extends TestCase
         $args->parse('moo boo poo woo');
         $this->assertCount(0, $args);
     }
+
+
+    function testOptions()
+    {
+        $args = new Args('<foo>...', ['--nes']);
+        $args->parse('moo boo poo');
+        $this->assertEquals('moo boo poo', $args[0]);
+        $this->assertEmpty($args->getOpts());
+        $args->parse('moo --nes poo');
+        $this->assertEquals('moo poo', $args[0]);
+        $this->assertEquals(['--nes'=>'--nes'], $args->getOpts());
+
+        $args = new Args('<foo>', ['--nes']);
+        $args->parse('moo boo poo');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertEmpty($args->getOpts());
+        $args->parse('moo --nes poo');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertEquals(['--nes'=>'--nes'], $args->getOpts());
+
+        $args = new Args('[foo]', ['--nes']);
+        $args->parse('moo boo poo');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertEmpty($args->getOpts());
+        $args->parse('--nes moo');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertTrue($args->getOpt('--nes'));
+
+        $args = new Args('[foo]', ['--nes', '--bar']);
+        $args->parse('moo --nes boo poo');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertTrue($args->getOpt('--nes'));
+        $this->assertFalse($args->getOpt('--bar'));
+        $args->parse('--nes moo --bar');
+        $this->assertEquals('moo', $args[0]);
+        $this->assertTrue($args->getOpt('--nes'));
+        $this->assertTrue($args->getOpt('--bar'));
+    }
 }

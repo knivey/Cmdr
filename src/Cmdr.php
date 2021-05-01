@@ -12,14 +12,14 @@ class Cmdr
         $this->cmds = new CIArray();
     }
 
-    function add(string $command, callable $method, array $preArgs = [], array $postArgs = [], string $syntax = '') {
+    function add(string $command, callable $method, array $preArgs = [], array $postArgs = [], string $syntax = '', array $opts = []) {
         if (str_contains($command, '#')) {
             throw new \Exception('Command name cannot contain #');
         }
         if(isset($this->cmds[$command])) {
             throw new \Exception('Command already exists');
         }
-        $this->cmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax);
+        $this->cmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts);
     }
 
     function get(string $command, string $text) : Request|false {
@@ -52,18 +52,22 @@ class Cmdr
             $sa = $syntaxAttr[0]->newInstance();
             $syntax = $sa->syntax;
         }
+
         $callWrapAttr = $rf->getAttributes(attributes\CallWrap::class);
-        if (isset($callWrapAttr[0])) {
-            $cw = $callWrapAttr[0]->newInstance();
-            $callWrapper = $cw->caller;
-            $callWrapperPre = $cw->preArgs;
+        if ($cw = ($callWrapAttr[0]??null)?->newInstance()) {
+            $callWrapperPre = [...$cw->preArgs, $f];
+            $f = $cw->caller;
             $callWrapperPost = $cw->postArgs;
         }
+
+        $optionsAttr = $rf->getAttributes(attributes\Options::class);
+        $opts = [];
+        if(isset($optionsAttr[0]))
+            $opts = $optionsAttr[0]->newInstance()->options;
+
+
         foreach ($cmdAttr->args as $command) {
-            if ($callWrapper != null)
-                $this->cmds[$command] = new Cmd($command, $callWrapper, [...$callWrapperPre, $f], $callWrapperPost, $syntax);
-            else
-                $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax);
+            $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax, $opts);
         }
     }
 

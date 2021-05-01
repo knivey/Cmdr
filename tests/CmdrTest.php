@@ -2,6 +2,7 @@
 
 namespace knivey\cmdr\test;
 
+use knivey\cmdr\attributes\Options;
 use knivey\cmdr\Cmdr;
 use knivey\cmdr\Request;
 use knivey\cmdr\attributes\Cmd;
@@ -44,10 +45,11 @@ class CmdrTest extends TestCase
         $lol = function ($req) use(&$cnt) {
             $this->assertInstanceOf(Request::class, $req);
             $this->assertEquals('abc def', $req->args['stuff']);
+            $this->assertEquals(['--bar'], $req->args->getOpts());
             $cnt++;
         };
-        $cmdr->add('test', $lol, syntax: '<stuff>...');
-        $cmdr->call('test', 'abc def');
+        $cmdr->add('test', $lol, syntax: '<stuff>...', opts: ['--bar']);
+        $cmdr->call('test', 'abc def --bar');
         $this->assertEquals(1, $cnt);
     }
 
@@ -91,10 +93,11 @@ class CmdrTest extends TestCase
         $testFunc =
             function ($req) use(&$cnt) {
                 $this->assertEquals('abc def', $req->args['foo']);
+                $this->assertTrue($req->args->getOpt('--bar'));
                 $cnt++;
             };
         $cmdr->loadFuncs();
-        $cmdr->call('testattrs', 'abc def');
+        $cmdr->call('testattrs', 'abc --bar def');
         $cmdr->call('noexist', 'abc def');
         $this->assertEquals(1, $cnt);
     }
@@ -167,6 +170,7 @@ $testFunc = function () {};
 
 #[Cmd("testAttrs")]
 #[Syntax("<foo>...")]
+#[Options("--bar")]
 function testAttrs(...$args) {
     global $testFunc;
     $testFunc(...$args);

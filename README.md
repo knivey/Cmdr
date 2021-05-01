@@ -25,10 +25,13 @@ $router = new cmdr\Cmdr();
 //All command functions will have Request as the last argument
 #[cmdr\attributes\Cmd("example", "altname")] //define as many cmds for this function as you want
 #[cmdr\attributes\Syntax("<required> [optional]")]
+#[cmdr\attributes\Options("--option", "--anotheroption")]
 function exampleFunc($additonal, $arguments, cmdr\Request $request) {
     echo $request->args["required"];
-    if(isset($request->args["optional"])
+    if(isset($request->args["optional"]))
         echo $request->args["optional"];
+    if($request->getOpt('--option'))
+        echo "--option was used";
 }
 
 //Do this AFTER all functions you want to load are defined
