@@ -83,7 +83,7 @@ class CmdrTest extends TestCase
         $cmdr->add('#test', $lol);
     }
 
-    public function testLoadFuncsByAttributes()
+    public function testLoadFuncs()
     {
         global $testFunc;
         $cnt = 0;
@@ -93,9 +93,24 @@ class CmdrTest extends TestCase
                 $this->assertEquals('abc def', $req->args['foo']);
                 $cnt++;
             };
-        $cmdr->loadFuncsByAttributes();
+        $cmdr->loadFuncs();
         $cmdr->call('testattrs', 'abc def');
         $cmdr->call('noexist', 'abc def');
+        $this->assertEquals(1, $cnt);
+    }
+
+    public function testLoadMethods()
+    {
+        global $testFunc;
+        $cnt = 0;
+        $cmdr = new Cmdr();
+        $testFunc =
+            function ($req) use(&$cnt) {
+                $cnt++;
+            };
+        $obj = new weeclass();
+        $cmdr->loadMethods($obj);
+        $cmdr->call('wee', '');
         $this->assertEquals(1, $cnt);
     }
 
@@ -129,8 +144,21 @@ class CmdrTest extends TestCase
             $cnt++;
         };
 
-        $cmdr->loadFuncsByAttributes();
+        $cmdr->loadFuncs();
         $cmdr->call('testCallWrap', 'abc def');
+        $this->assertEquals(1, $cnt);
+
+
+        $obj = new weeclass();
+        $testFunc = function ($func, $req) use(&$cnt, $obj) {
+            //php namespace&functions are lowered internally
+            $this->assertEquals([$obj, 'eew'], $func);
+            $cnt++;
+        };
+        $cmdr = new Cmdr();
+        $cnt = 0;
+        $cmdr->loadMethods($obj);
+        $cmdr->call('eew', 'abc def');
         $this->assertEquals(1, $cnt);
     }
 }
@@ -153,4 +181,19 @@ function wrapTestFunc(...$args) {
     global $testFunc;
     $testFunc(...$args);
 };
+
+
+// not sure phpunit supports mocking with attributes yet
+class weeclass {
+    #[Cmd('wee')]
+    public function example($req) {
+        global $testFunc;
+        $testFunc($req);
+    }
+
+    #[Cmd('eew')]
+    #[CallWrap(__namespace__.'\wrapTestFunc')]
+    public function eew($req) {
+    }
+}
 

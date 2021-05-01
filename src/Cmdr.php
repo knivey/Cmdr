@@ -31,41 +31,47 @@ class Cmdr
 	    return new Request($args, $cmd);
     }
 
-    function loadMethodsByAttributes(object $obj) {
-	    //TODO
+    function loadMethods(object $obj) {
+	    $objRef = new \ReflectionObject($obj);
+	    foreach($objRef->getMethods(\ReflectionMethod::IS_PUBLIC) as $rf) {
+            $this->attrAddCmd($rf, [$obj, $rf->name]);
+        }
     }
 
-    function loadFuncsByAttributes() {
+    protected function attrAddCmd($rf, $f) {
+        $cmdAttr = $rf->getAttributes(attributes\Cmd::class);
+        if (count($cmdAttr) == 0)
+            return;
+        $cmdAttr = $cmdAttr[0]->newInstance();
+        $syntaxAttr = $rf->getAttributes(attributes\Syntax::class);
+        $syntax = '';
+        $callWrapper = null;
+        $callWrapperPre = [];
+        $callWrapperPost = [];
+        if (isset($syntaxAttr[0])) {
+            $sa = $syntaxAttr[0]->newInstance();
+            $syntax = $sa->syntax;
+        }
+        $callWrapAttr = $rf->getAttributes(attributes\CallWrap::class);
+        if (isset($callWrapAttr[0])) {
+            $cw = $callWrapAttr[0]->newInstance();
+            $callWrapper = $cw->caller;
+            $callWrapperPre = $cw->preArgs;
+            $callWrapperPost = $cw->postArgs;
+        }
+        foreach ($cmdAttr->args as $command) {
+            if ($callWrapper != null)
+                $this->cmds[$command] = new Cmd($command, $callWrapper, [...$callWrapperPre, $f], $callWrapperPost, $syntax);
+            else
+                $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax);
+        }
+    }
+
+    function loadFuncs() {
 	    $funcs = get_defined_functions(true)["user"];
 	    foreach ($funcs as $f) {
 	        $rf = new \ReflectionFunction($f);
-	        //all commands should at least have Cmd attribute
-	        $cmdAttr = $rf->getAttributes(attributes\Cmd::class);
-	        if(count($cmdAttr) == 0)
-	            continue;
-	        $cmdAttr = $cmdAttr[0]->newInstance();
-            $syntaxAttr = $rf->getAttributes(attributes\Syntax::class);
-            $syntax = '';
-            $callWrapper = null;
-            $callWrapperPre = [];
-            $callWrapperPost = [];
-            if(isset($syntaxAttr[0])) {
-                $sa = $syntaxAttr[0]->newInstance();
-                $syntax = $sa->syntax;
-            }
-            $callWrapAttr = $rf->getAttributes(attributes\CallWrap::class);
-            if(isset($callWrapAttr[0])) {
-                $cw = $callWrapAttr[0]->newInstance();
-                $callWrapper = $cw->caller;
-                $callWrapperPre = $cw->preArgs;
-                $callWrapperPost = $cw->postArgs;
-            }
-            foreach ($cmdAttr->args as $command) {
-                if($callWrapper != null)
-                    $this->cmds[$command] = new Cmd($command, $callWrapper, [...$callWrapperPre, $f], $callWrapperPost, $syntax);
-                else
-                    $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax);
-            }
+	        $this->attrAddCmd($rf, $f);
         }
     }
 

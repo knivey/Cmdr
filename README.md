@@ -17,6 +17,7 @@ composer require knivey/cmdr
 ## Documentation & Examples
 
 Setup the command router object and find commands
+
 ```php
 use knivey\cmdr;
 $router = new cmdr\Cmdr();
@@ -31,7 +32,7 @@ function exampleFunc($additonal, $arguments, cmdr\Request $request) {
 }
 
 //Do this AFTER all functions you want to load are defined
-$router->loadFuncsByAttributes();
+$router->loadFuncs();
 
 // This will return what the command function returns
 // Exceptions can be throw if the args given don't pass the syntax
@@ -39,6 +40,7 @@ $router->call('example', 'arguments given to cmd', $additional, $arguments);
 ```
 Note that command names cannot contain a # in them.
 
+To load public methods from a class object use `loadMethods($obj)`
 ### Argument Syntax Rules
 *  `<arg>` is a required arg
 *  `<arg>...` required multiword arg, must be last in list
