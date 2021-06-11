@@ -36,7 +36,6 @@ class Args implements \ArrayAccess, \Countable
      */
     function __construct(public string $syntax, protected array $opts = [])
     {
-        $this->opts = array_map('\strtolower', $this->opts);
         $argv = array_filter(explode(' ', $syntax));
         if (count($argv) == 0) {
             return;
@@ -91,8 +90,14 @@ class Args implements \ArrayAccess, \Countable
         $msg = explode(' ', $msg);
         $msgb = [];
         foreach ($msg as $w) {
-            if(in_array($w, $this->opts))
-                $this->parsedOpts[$w] = $w;
+            if(str_contains($w, "=")) {
+                list($lhs, $rhs) = explode("=", $w, 2);
+            } else {
+                $lhs = $w;
+                $rhs = null;
+            }
+            if(in_array($lhs, $this->opts))
+                $this->parsedOpts[$lhs] = $rhs;
             else
                 $msgb[] = $w;
         }
@@ -123,7 +128,13 @@ class Args implements \ArrayAccess, \Countable
     }
 
     public function getOpt($name) : bool {
-        return isset($this->parsedOpts[strtolower($name)]);
+        return array_key_exists($name, $this->parsedOpts);
+    }
+
+    public function getOptVal($name) {
+        if(!$this->getOpt($name))
+            return false;
+        return $this->parsedOpts[$name];
     }
 
     public function getArg(string $name): ?Arg {
