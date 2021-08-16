@@ -24,8 +24,12 @@ $router = new cmdr\Cmdr();
 
 //All command functions will have Request as the last argument
 #[cmdr\attributes\Cmd("example", "altname")] //define as many cmds for this function as you want
+#[cmdr\attributes\PrivCmd("example", "altname")] //private message command
 #[cmdr\attributes\Syntax("<required> [optional]")]
 #[cmdr\attributes\Options("--option", "--anotheroption")]
+#[cmdr\attributes\Option("--optionb", "description of option")]
+#[cmdr\attributes\Option("--optionc", "description of option")]
+#[cmdr\attributes\Desc("description of cmd")]
 function exampleFunc($additonal, $arguments, cmdr\Request $request) {
     echo $request->args["required"];
     if(isset($request->args["optional"]))

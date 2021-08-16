@@ -31,7 +31,7 @@ class Args implements \ArrayAccess, \Countable
     /**
      * constructor.
      * @param string $syntax
-     * @param array $opts
+     * @param Option[] $opts
      * @throws SyntaxException Will throw if syntax is invalid
      */
     function __construct(public string $syntax, protected array $opts = [])
@@ -79,6 +79,14 @@ class Args implements \ArrayAccess, \Countable
         }
     }
 
+    protected function findOpt(string $name) : bool {
+        foreach ($this->opts as $opt) {
+            if($opt->option == $name)
+                return true;
+        }
+        return false;
+    }
+
     /**
      * Parse arguments given to a command using its syntax rules
      * @param string $msg
@@ -96,7 +104,7 @@ class Args implements \ArrayAccess, \Countable
                 $lhs = $w;
                 $rhs = null;
             }
-            if(in_array($lhs, $this->opts))
+            if($this->findOpt($lhs))
                 $this->parsedOpts[$lhs] = $rhs;
             else
                 $msgb[] = $w;

@@ -12,7 +12,8 @@ class Cmd
         public array $preArgs,
         public array $postArgs,
         public string $syntax,
-        public array $opts
+        public array $opts,
+        public string $desc = "No description"
     )
     {
         if(!is_callable($this->method)) {
