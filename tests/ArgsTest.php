@@ -3,6 +3,7 @@
 namespace knivey\cmdr\test;
 
 use knivey\cmdr\Args;
+use knivey\cmdr\Option;
 use knivey\cmdr\ParseException;
 use knivey\cmdr\SyntaxException;
 use PHPUnit\Framework\TestCase;
@@ -259,7 +260,7 @@ class ArgsTest extends TestCase
 
     function testOptions()
     {
-        $args = new Args('<foo>...', ['--nes']);
+        $args = new Args('<foo>...', [new Option('--nes')]);
         $args->parse('moo boo poo');
         $this->assertEquals('moo boo poo', $args[0]);
         $this->assertEmpty($args->getOpts());
@@ -267,7 +268,7 @@ class ArgsTest extends TestCase
         $this->assertEquals('moo poo', $args[0]);
         $this->assertEquals(['--nes'=>null], $args->getOpts());
 
-        $args = new Args('<foo>', ['--nes']);
+        $args = new Args('<foo>', [new Option('--nes')]);
         $args->parse('moo boo poo');
         $this->assertEquals('moo', $args[0]);
         $this->assertEmpty($args->getOpts());
@@ -275,7 +276,7 @@ class ArgsTest extends TestCase
         $this->assertEquals('moo', $args[0]);
         $this->assertEquals(['--nes'=>null], $args->getOpts());
 
-        $args = new Args('[foo]', ['--nes']);
+        $args = new Args('[foo]', [new Option('--nes')]);
         $args->parse('moo boo poo');
         $this->assertEquals('moo', $args[0]);
         $this->assertEmpty($args->getOpts());
@@ -283,7 +284,7 @@ class ArgsTest extends TestCase
         $this->assertEquals('moo', $args[0]);
         $this->assertTrue($args->getOpt('--nes'));
 
-        $args = new Args('[foo]', ['--nes', '--bar']);
+        $args = new Args('[foo]', [new Option('--nes'), new Option('--bar')]);
         $args->parse('moo --nes boo poo');
         $this->assertEquals('moo', $args[0]);
         $this->assertTrue($args->getOpt('--nes'));
@@ -296,12 +297,12 @@ class ArgsTest extends TestCase
 
     function testOptionsCase()
     {
-        $args = new Args('', ['--nes', '--NES']);
+        $args = new Args('', [new Option('--nes'), new Option('--NES')]);
         $args->parse('--nes');
         $this->assertTrue($args->getOpt("--nes"));
         $this->assertFalse($args->getOpt("--NES"));
 
-        $args = new Args('', ['--nes', '--NES']);
+        $args = new Args('', [new Option('--nes'), new Option('--NES')]);
         $args->parse('--NES');
         $this->assertFalse($args->getOpt("--nes"));
         $this->assertTrue($args->getOpt("--NES"));
@@ -309,7 +310,7 @@ class ArgsTest extends TestCase
 
     function testOptionsValue()
     {
-        $args = new Args('', ['--nes', '--jam']);
+        $args = new Args('', [new Option('--nes'), new Option('--jam')]);
         $args = $args->parse('--nes');
         $this->assertTrue($args->getOpt("--nes"));
         $this->assertEquals('', $args->getOptVal("--nes"));
