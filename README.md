@@ -43,7 +43,7 @@ $router->loadFuncs();
 
 // This will return what the command function returns
 // Exceptions can be throw if the args given don't pass the syntax
-$router->call('example', 'arguments given to cmd', $additional, $arguments);
+$router->call('example', 'arguments given to cmd', "additional", "arguments");
 ```
 Note that command names cannot contain a # in them.
 
@@ -77,3 +77,16 @@ function someWrapperFunc($one, $two, $three, callable $func, $stuff, cmdr\Reques
     return $func($request);
 }
 ```
+## TODO
+ * validation in the argument dsl, have many built in, allow adding, validator per arg, validator can also act like a caster Ex bool will cast to bool php type
+   * \<arg name:validations>
+   * \<width:uint max=100 min=50> args=val must NOT have any spaces, arg without =val will just be true
+   * \<operation:(add|del | list)> option list (trim()ed)
+   * \<blah:bool> accepts on off etc casts into a bool
+   * \<blah:custom arg=val> custom validator, and caster if defined, arguments must match function argument names
+
+validation can have a custom validator defined by using attributes
+also have a cast function that attaches to that validator
+custom validators should try to keep all their args optional
+first arg will always be val
+filters may use the same arg names as their validator but not required to
