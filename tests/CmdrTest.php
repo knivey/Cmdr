@@ -6,6 +6,7 @@ use knivey\cmdr\attributes\Desc;
 use knivey\cmdr\attributes\Options;
 use knivey\cmdr\attributes\PrivCmd;
 use knivey\cmdr\Cmdr;
+use knivey\cmdr\exceptions\CmdNotFound;
 use knivey\cmdr\Option as Opt;
 use knivey\cmdr\Request;
 use knivey\cmdr\attributes\Cmd;
@@ -38,7 +39,7 @@ class CmdrTest extends TestCase
         $lol = function ($req) use(&$cnt) {
             $this->assertInstanceOf(Request::class, $req);
             $this->assertEquals('abc def', $req->args['stuff']);
-            $this->assertTrue($req->args->getOpt('--bar'));
+            $this->assertTrue($req->args->optEnabled('--bar'));
             $cnt++;
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...', opts: [new Opt('--bar')]);
@@ -132,13 +133,12 @@ class CmdrTest extends TestCase
         $testFunc =
             function ($req) use(&$cnt) {
                 $this->assertEquals('abc def', $req->args['foo']);
-                $this->assertTrue($req->args->getOpt('--bar'));
+                $this->assertTrue($req->args->optEnabled('--bar'));
                 $this->assertTrue($req->args->getOpt('--baz'));
                 $cnt++;
             };
         $cmdr->loadFuncs();
         $cmdr->call('testattrs', 'abc --bar def --baz');
-        $cmdr->call('noexist', 'abc def');
         $this->assertEquals(1, $cnt);
         $cmdr->call('testpubpriv', 'abc --bar def --baz');
         $this->assertEquals(2, $cnt);
@@ -146,13 +146,19 @@ class CmdrTest extends TestCase
         $this->assertEquals(3, $cnt);
         $cmdr->callPriv('testpriv', 'abc --bar def --baz');
         $this->assertEquals(4, $cnt);
-        $cmdr->call('testpriv', 'abc --bar def --baz');
         $this->assertEquals(4, $cnt);
 
         $this->assertEquals("test cmd", $cmdr->privCmds["testPubPriv"]->desc);
         $this->assertEquals("test cmd", $cmdr->cmds["testPubPriv"]->desc);
+    }
 
-        $this->assertEquals("test opt desc", $cmdr->privCmds["testpriv"]->opts[1]->desc);
+    public function testCmdNotFoundException()
+    {
+        $cmdr = new Cmdr();
+        $cmdr->loadFuncs();
+        $this->expectException(CmdNotFound::class);
+        $cmdr->call('noexist', 'abc def');
+        $cmdr->call('testpriv', 'abc --bar def --baz');
     }
 
     public function testLoadMethods()

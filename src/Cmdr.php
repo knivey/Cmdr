@@ -2,6 +2,8 @@
 namespace knivey\cmdr;
 
 use \Ayesh\CaseInsensitiveArray\Strict as CIArray;
+use knivey\cmdr\exceptions\CmdNotFound;
+use knivey\cmdr\exceptions\OptAlreadyDefined;
 
 class Cmdr
 {
@@ -94,7 +96,9 @@ class Cmdr
         if(isset($optionsAttr[0])) {
             $options = $optionsAttr[0]->newInstance()->options;
             foreach ($options as $opt) {
-                $opts[] = new Option($opt, "No description");
+                if(isset($opts[$opt]))
+                    throw new OptAlreadyDefined($opt);
+                $opts[$opt] = new Option($opt, "No description");
             }
         }
 
@@ -102,7 +106,9 @@ class Cmdr
         foreach ($optionAttr as $attr) {
             $opt = $attr->newInstance();
             foreach ($opt->options as $v) {
-                $opts[] = new Option($v, $opt->desc);
+                if(isset($opts[$v]))
+                    throw new OptAlreadyDefined($v);
+                $opts[$v] = new Option($v, $opt->desc);
             }
         }
 
@@ -123,7 +129,7 @@ class Cmdr
         }
     }
 
-    function loadFuncs() {
+    function loadFuncs(): void {
 	    $funcs = get_defined_functions(true)["user"];
 	    foreach ($funcs as $f) {
 	        $rf = new \ReflectionFunction($f);
@@ -131,18 +137,33 @@ class Cmdr
         }
     }
 
+    function cmdExists(string $command): bool {
+        return isset($this->cmds[$command]);
+    }
+
+    function cmdExistsPriv(string $command): bool {
+        return isset($this->privCmds[$command]);
+    }
+
+    /**
+     * @throws CmdNotFound
+     */
     function call(string $command, string $text, ...$extraArgs) {
 	    $req = $this->get($command, $text);
 	    if(!$req)
-	        return false;
-	    return call_user_func_array($req->cmd->method, [...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
+	        throw new CmdNotFound($command);
+        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
+        //return call_user_func_array($req->cmd->method, [...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
     }
 
+    /**
+     * @throws CmdNotFound
+     */
     function callPriv(string $command, string $text, ...$extraArgs) {
         $req = $this->get($command, $text, priv: true);
         if(!$req)
-            return false;
-        return call_user_func_array($req->cmd->method, [...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
+            throw new CmdNotFound($command);
+        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
     }
 
 }

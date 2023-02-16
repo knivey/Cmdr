@@ -1,14 +1,29 @@
 <?php
 namespace knivey\cmdr;
 
+use Closure;
+use knivey\cmdr\exceptions\SyntaxException;
 
+/**
+ * @template TReturn
+ */
 class Cmd
 {
-    public Args $cmdArgs;
+    readonly public Args $cmdArgs;
+    /**
+     * @var Closure(): TReturn
+     */
+    readonly public Closure $method;
 
+    /**
+     * @param callable(): TReturn $method
+     * @param Option[] $opts
+     * @throws SyntaxException
+     * @throws \Exception
+     */
     public function __construct(
-        public string $command,
-        public $method,
+        readonly public string $command,
+        callable $method,
         public array $preArgs,
         public array $postArgs,
         public string $syntax,
@@ -16,9 +31,25 @@ class Cmd
         public string $desc = "No description"
     )
     {
-        if(!is_callable($this->method)) {
-            throw new \Exception("Method argument to Cmd isn't callable (" . print_r($method, 1) .")");
-        }
+        $this->method = $method(...);
         $this->cmdArgs = new Args($syntax, $opts);
+    }
+
+    /**
+     * @param ...$args
+     * @return TReturn
+     */
+    function call(...$args) {
+        return call_user_func_array($this->method, $args);
+    }
+
+    function __toString(): string
+    {
+        $out = trim($this->command . " " . $this->cmdArgs->syntax) . "\n";
+        foreach ($this->opts as $opt) {
+            $out .= "    $opt->option $opt->desc\n";
+        }
+        $out .= $this->desc;
+        return rtrim($out, "\n");
     }
 }

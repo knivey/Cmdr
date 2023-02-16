@@ -1,5 +1,5 @@
 <?php
-namespace knivey\cmdr;
+namespace knivey\cmdr\exceptions;
 
 class SyntaxException extends \Exception {
 

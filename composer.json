@@ -16,7 +16,7 @@
     }
   ],
   "require": {
-    "php": ">=8.0",
+    "php": ">=8.2",
     "ayesh/case-insensitive-array": "^1.4"
   },
   "require-dev": {

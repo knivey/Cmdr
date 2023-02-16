@@ -2,6 +2,11 @@
 namespace knivey\cmdr;
 
 
+use knivey\cmdr\exceptions\OptNotFound;
+use knivey\cmdr\exceptions\ParseException;
+use knivey\cmdr\exceptions\SyntaxException;
+use \Ayesh\CaseInsensitiveArray\Strict as CIArray;
+
 /**
  * Parse syntax and store arguments to command
  * Syntax rules:
@@ -24,18 +29,24 @@ class Args implements \ArrayAccess, \Countable
     protected array $parsed = Array();
 
     /**
-     * @var array $parsedOpts
+     * @var CIArray $parsedOpts
      */
-    protected array $parsedOpts = Array();
+    protected CIArray $parsedOpts;
 
+    protected CIArray $opts;
     /**
      * constructor.
      * @param string $syntax
      * @param Option[] $opts
      * @throws SyntaxException Will throw if syntax is invalid
      */
-    function __construct(public string $syntax, protected array $opts = [])
-    {
+    function __construct(
+        public string $syntax,
+        array $opts = []
+    ) {
+        $this->opts = new CIArray();
+        foreach ($opts as $opt)
+            $this->opts[$opt->option] = $opt;
         $argv = array_filter(explode(' ', $syntax));
         if (count($argv) == 0) {
             return;
@@ -79,12 +90,8 @@ class Args implements \ArrayAccess, \Countable
         }
     }
 
-    protected function findOpt(string $name) : bool {
-        foreach ($this->opts as $opt) {
-            if($opt->option == $name)
-                return true;
-        }
-        return false;
+    protected function findOpt(string $name): bool {
+        return isset($this->opts[$name]);
     }
 
     /**
@@ -94,7 +101,7 @@ class Args implements \ArrayAccess, \Countable
      * @throws ParseException throws exception if required args arent provided
      */
     public function parse(string $msg) : Args {
-        $this->parsedOpts = [];
+        $this->parsedOpts = new CIArray();
         $msg = explode(' ', $msg);
         $msgb = [];
         foreach ($msg as $w) {
@@ -131,18 +138,26 @@ class Args implements \ArrayAccess, \Countable
         return clone $this;
     }
 
-    public function getOpts() {
+    public function getOpts(): CIArray {
         return $this->parsedOpts;
     }
 
-    public function getOpt($name) : bool {
-        return array_key_exists($name, $this->parsedOpts);
+    /**
+     * @throws OptNotFound
+     */
+    public function optEnabled($name): bool {
+        if(!$this->findOpt($name))
+            throw new OptNotFound($name);
+        return isset($this->parsedOpts[$name]);
     }
 
-    public function getOptVal($name) {
-        if(!$this->getOpt($name))
+    /**
+     * @throws OptNotFound
+     */
+    public function getOpt($name) {
+        if(!$this->optEnabled($name))
             return false;
-        return $this->parsedOpts[$name];
+        return $this->parsedOpts[$name] ?? true;
     }
 
     public function getArg(string $name): ?Arg {
@@ -158,10 +173,10 @@ class Args implements \ArrayAccess, \Countable
     }
 
     //Readonly
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value): void {
         return;
     }
-    public function offsetExists($offset) {
+    public function offsetExists($offset): bool {
         if(is_numeric($offset)) {
             return isset($this->parsed[$offset]) && $this->parsed[$offset]->val != null;
         }
@@ -172,7 +187,7 @@ class Args implements \ArrayAccess, \Countable
         }
         return false;
     }
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset): void {
         return;
     }
     public function offsetGet($offset): ?string {
@@ -189,7 +204,7 @@ class Args implements \ArrayAccess, \Countable
         return null;
     }
 
-    public function count() {
+    public function count(): int {
         return count($this->parsed);
     }
 }

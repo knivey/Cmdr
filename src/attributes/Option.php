@@ -3,7 +3,7 @@
 
 namespace knivey\cmdr\attributes;
 
-#[\Attribute]
+#[\Attribute(\Attribute::IS_REPEATABLE | \Attribute::TARGET_FUNCTION | \Attribute::TARGET_METHOD)]
 class Option
 {
     public array $options;

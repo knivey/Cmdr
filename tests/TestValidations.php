@@ -2,7 +2,6 @@
 
 namespace knivey\cmdr\test;
 
-use PhpParser\Node\Expr\Cast\Object_;
 use PHPUnit\Framework\TestCase;
 use knivey\cmdr\Validate;
 
