@@ -1,15 +1,18 @@
 <?php
 namespace knivey\cmdr;
 
-use \Ayesh\CaseInsensitiveArray\Strict as CIArray;
+use Ayesh\CaseInsensitiveArray\Strict as CIArray;
+use knivey\cmdr\exceptions\BadCmdName;
+use knivey\cmdr\exceptions\CmdAlreadyExists;
 use knivey\cmdr\exceptions\CmdNotFound;
 use knivey\cmdr\exceptions\OptAlreadyDefined;
+use knivey\cmdr\exceptions\SyntaxException;
 
 class Cmdr
 {
-    /** @var Cmd[]  */
+    /** @var CIArray<Cmd>  */
     public CIArray $cmds;
-    /** @var Cmd[]  */
+    /** @var CIArray<Cmd>  */
     public CIArray $privCmds;
 
 	public function __construct()
@@ -18,18 +21,27 @@ class Cmdr
         $this->privCmds = new CIArray();
     }
 
-    function add(string $command, callable $method, array $preArgs = [], array $postArgs = [], string $syntax = '', array $opts = [], bool $priv = false, string $desc = "No description") {
+    /**
+     * @throws BadCmdName
+     * @throws CmdAlreadyExists
+     * @throws SyntaxException
+     */
+    function add(string $command, callable $method, array $preArgs = [], array $postArgs = [], string $syntax = '',
+                 array $opts = [], bool $priv = false, string $desc = "No description"): void {
         if (str_contains($command, '#')) {
-            throw new \Exception('Command name cannot contain #');
+            throw new BadCmdName('Command name cannot contain #');
+        }
+        if (str_contains($command, ' ')) {
+            throw new BadCmdName('Command name cannot contain space');
         }
         if(!$priv) {
             if (isset($this->cmds[$command])) {
-                throw new \Exception('Command already exists');
+                throw new CmdAlreadyExists("Command $command already exists");
             }
             $this->cmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc);
         } else {
             if (isset($this->privCmds[$command])) {
-                throw new \Exception('Command already exists');
+                throw new CmdAlreadyExists("Command already exists");
             }
             $this->privCmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc);
         }
@@ -51,14 +63,22 @@ class Cmdr
 	    return new Request($args, $cmd);
     }
 
-    function loadMethods(object $obj) {
+    /**
+     * @throws OptAlreadyDefined|SyntaxException
+     */
+    function loadMethods(object $obj): void {
 	    $objRef = new \ReflectionObject($obj);
 	    foreach($objRef->getMethods(\ReflectionMethod::IS_PUBLIC) as $rf) {
             $this->attrAddCmd($rf, [$obj, $rf->name]);
         }
     }
 
-    protected function attrAddCmd($rf, $f) {
+    /**
+     * @throws OptAlreadyDefined
+     * @throws SyntaxException
+     */
+    protected function attrAddCmd($rf, $f): void
+    {
         $cmdAttr = $rf->getAttributes(attributes\Cmd::class);
         $privCmdAttr = $rf->getAttributes(attributes\PrivCmd::class);
         $pub = false;
@@ -76,7 +96,6 @@ class Cmdr
             $privCmdAttr = $privCmdAttr[0]->newInstance();
         $syntaxAttr = $rf->getAttributes(attributes\Syntax::class);
         $syntax = '';
-        $callWrapper = null;
         $callWrapperPre = [];
         $callWrapperPost = [];
         if (isset($syntaxAttr[0])) {
@@ -129,6 +148,11 @@ class Cmdr
         }
     }
 
+    /**
+     * @throws \ReflectionException
+     * @throws OptAlreadyDefined
+     * @throws SyntaxException
+     */
     function loadFuncs(): void {
 	    $funcs = get_defined_functions(true)["user"];
 	    foreach ($funcs as $f) {

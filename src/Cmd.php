@@ -16,10 +16,14 @@ class Cmd
     readonly public Closure $method;
 
     /**
+     * @param string $command
      * @param callable(): TReturn $method
+     * @param array $preArgs
+     * @param array $postArgs
+     * @param string $syntax
      * @param Option[] $opts
+     * @param string $desc
      * @throws SyntaxException
-     * @throws \Exception
      */
     public function __construct(
         readonly public string $command,

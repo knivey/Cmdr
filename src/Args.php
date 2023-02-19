@@ -5,14 +5,14 @@ namespace knivey\cmdr;
 use knivey\cmdr\exceptions\OptNotFound;
 use knivey\cmdr\exceptions\ParseException;
 use knivey\cmdr\exceptions\SyntaxException;
-use \Ayesh\CaseInsensitiveArray\Strict as CIArray;
+use Ayesh\CaseInsensitiveArray\Strict as CIArray;
 
 /**
  * Parse syntax and store arguments to command
  * Syntax rules:
  *  <arg> is a required arg
  *  <arg>... required multiword arg, must be last in list
- *  [arg] is an optional arg, all optionals must be at the end and no multiword arguments preceed
+ *  [arg] is an optional arg, all optionals must be at the end and no multiword arguments preceded
  *  [arg]... optional multiword arg, must be last in list
  * The arg name must not contain []<> or whitespace
  */
@@ -71,7 +71,7 @@ class Args implements \ArrayAccess, \Countable
                 $matched = true;
             }
 
-            if (preg_match('/\[([^>]+)\](\.\.\.)?/', $a, $m)) {
+            if (preg_match('/\[([^>]+)](\.\.\.)?/', $a, $m)) {
                 if($m[0] != $a) {
                     throw new SyntaxException("Invalid syntax: problem with $a");
                 }
@@ -98,7 +98,7 @@ class Args implements \ArrayAccess, \Countable
      * Parse arguments given to a command using its syntax rules
      * @param string $msg
      * @return Args Returns a cloned object
-     * @throws ParseException throws exception if required args arent provided
+     * @throws ParseException throws exception if required args aren't provided
      */
     public function parse(string $msg) : Args {
         $this->parsedOpts = new CIArray();
@@ -198,10 +198,7 @@ class Args implements \ArrayAccess, \Countable
             return null;
         }
         $arg = $this->getArg($offset);
-        if($arg) {
-            return $arg->val;
-        }
-        return null;
+        return $arg?->val;
     }
 
     public function count(): int {

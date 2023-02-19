@@ -14,13 +14,14 @@ class Validate {
         'int' => [self::class, 'asInt'],
         'uint' => [self::class, 'asInt'],
         'number' => [self::class, 'asNumber'],
-        'bool' => [self::class, 'asInt'],
+        'bool' => [self::class, 'asBool'],
     ];
 
     /**
      * @param string $validator
      * @param mixed $value
      * @param array $args indexed by either arg order or [arg name => value] for named args
+     * @return bool
      * @throws \Exception
      */
     static public function custom(string $validator, mixed $value, array $args = []) : bool {
@@ -50,18 +51,20 @@ class Validate {
      */
     static private function getCallablesArgs(callable $callable) : array | false {
         try {
-            $rf = new \ReflectionFunction(\Closure::fromCallable($callable));
+            $rf = new \ReflectionFunction($callable(...));
             return array_map(fn($v) => $v->name, $rf->getParameters());
-        } catch (\ReflectionException $e) {
+        } catch (\ReflectionException) {
             return false;
         }
     }
 
-    static public function setValidator(string $name, callable $validator) {
+    static public function setValidator(string $name, callable $validator): void
+    {
         self::$validators[$name] = $validator;
     }
 
-    static public function setFilter(string $name, callable $filter) {
+    static public function setFilter(string $name, callable $filter): void
+    {
         self::$filters[$name] = $filter;
     }
 
@@ -72,7 +75,7 @@ class Validate {
      * @param int $max
      * @return bool
      */
-    static public function int($val, $min = PHP_INT_MIN, $max = PHP_INT_MAX) : bool {
+    static public function int($val, int $min = PHP_INT_MIN, int $max = PHP_INT_MAX) : bool {
         if(!is_numeric($val))
             return false;
         if(!is_int(0+$val))
@@ -84,7 +87,8 @@ class Validate {
         return true;
     }
 
-    static public function asInt($val) {
+    static public function asInt($val): int
+    {
         return (int)$val;
     }
 
@@ -95,7 +99,7 @@ class Validate {
      * @param int $max
      * @return bool
      */
-    static public function uint($val, $min = 0, $max = PHP_INT_MAX) : bool {
+    static public function uint($val, int $min = 0, int $max = PHP_INT_MAX) : bool {
         if($min < 0) // why would anyone do this?
             $min = 0;
         return self::int($val, $min, $max);
@@ -118,7 +122,7 @@ class Validate {
         return true;
     }
 
-    static public function asNumber($val) {
+    static public function asNumber($val): float|int {
         return $val+0;
     }
 
@@ -142,7 +146,7 @@ class Validate {
 
     /**
      * @param $val
-     * @param $opts
+     * @param array $opts
      * @return bool
      */
     static public function options($val, array $opts) : bool {
