@@ -2,17 +2,18 @@
 
 namespace knivey\cmdr\test;
 
+use knivey\cmdr\Args;
 use knivey\cmdr\attributes\Desc;
 use knivey\cmdr\attributes\Options;
 use knivey\cmdr\attributes\PrivCmd;
 use knivey\cmdr\Cmdr;
 use knivey\cmdr\exceptions\CmdNotFound;
 use knivey\cmdr\Option as Opt;
-use knivey\cmdr\Request;
 use knivey\cmdr\attributes\Cmd;
 use knivey\cmdr\attributes\Syntax;
 use knivey\cmdr\attributes\CallWrap;
 use knivey\cmdr\attributes\Option;
+use knivey\cmdr\Request;
 use PHPUnit\Framework\TestCase;
 
 class CmdrTest extends TestCase
@@ -24,7 +25,7 @@ class CmdrTest extends TestCase
         $lol = function (...$args) use(&$cnt) {
             $this->assertEquals('testing', $args[0]);
             $this->assertCount(2, $args);
-            $this->assertInstanceOf(Request::class, $args[1]);
+            $this->assertInstanceOf(Args::class, $args[1]);
             $cnt++;
             return 'banana';
         };
@@ -36,10 +37,10 @@ class CmdrTest extends TestCase
 
         $cmdr = new Cmdr();
         $cnt = 0;
-        $lol = function ($req) use(&$cnt) {
-            $this->assertInstanceOf(Request::class, $req);
-            $this->assertEquals('abc def', $req->args['stuff']);
-            $this->assertTrue($req->args->optEnabled('--bar'));
+        $lol = function ($args) use(&$cnt) {
+            $this->assertInstanceOf(Args::class, $args);
+            $this->assertEquals('abc def', $args['stuff']);
+            $this->assertTrue($args->optEnabled('--bar'));
             $cnt++;
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...', opts: [new Opt('--bar')]);
@@ -55,9 +56,9 @@ class CmdrTest extends TestCase
     public function testExistsException()
     {
         $cmdr = new Cmdr();
-        $lol = function ($req) use(&$cnt) {
+        $lol = function ($args) use(&$cnt) {
         };
-        $lolb = function ($req) use(&$cnt) {
+        $lolb = function ($args) use(&$cnt) {
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...');
         $this->expectException(\Exception::class);
@@ -67,9 +68,9 @@ class CmdrTest extends TestCase
     public function testAddPrivExistsException()
     {
         $cmdr = new Cmdr();
-        $lol = function ($req) use(&$cnt) {
+        $lol = function ($args) use(&$cnt) {
         };
-        $lolb = function ($req) use(&$cnt) {
+        $lolb = function ($args) use(&$cnt) {
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...', priv: true);
         $this->expectException(\Exception::class);
@@ -79,9 +80,9 @@ class CmdrTest extends TestCase
     public function testAddPrivSameNameAsPub()
     {
         $cmdr = new Cmdr();
-        $lol = function ($req) use(&$cnt) {
+        $lol = function ($args) use(&$cnt) {
         };
-        $lolb = function ($req) use(&$cnt) {
+        $lolb = function ($args) use(&$cnt) {
         };
         $cmdr->add('test', $lol, syntax: '<stuff>...');
         $cmdr->add('test', $lolb, priv: true);
@@ -108,7 +109,7 @@ class CmdrTest extends TestCase
     public function testSameFuncOK()
     {
         $cmdr = new Cmdr();
-        $lol = function ($req) use(&$cnt) {
+        $lol = function ($args) use(&$cnt) {
         };
         $cmdr->add('test', $lol);
         //You would want the same syntax on all I think, this is left to user
@@ -119,7 +120,7 @@ class CmdrTest extends TestCase
     public function testBadNameException()
     {
         $cmdr = new Cmdr();
-        $lol = function ($req) use(&$cnt) {
+        $lol = function ($args) use(&$cnt) {
         };
         $this->expectException(\Exception::class);
         $cmdr->add('#test', $lol);
@@ -131,10 +132,10 @@ class CmdrTest extends TestCase
         $cnt = 0;
         $cmdr = new Cmdr();
         $testFunc =
-            function ($req) use(&$cnt) {
-                $this->assertEquals('abc def', $req->args['foo']);
-                $this->assertTrue($req->args->optEnabled('--bar'));
-                $this->assertTrue($req->args->getOpt('--baz'));
+            function ($args) use(&$cnt) {
+                $this->assertEquals('abc def', $args['foo']);
+                $this->assertTrue($args->optEnabled('--bar'));
+                $this->assertTrue($args->getOpt('--baz'));
                 $cnt++;
             };
         $cmdr->loadFuncs();
@@ -167,7 +168,7 @@ class CmdrTest extends TestCase
         $cnt = 0;
         $cmdr = new Cmdr();
         $testFunc =
-            function ($req) use(&$cnt) {
+            function ($args) use(&$cnt) {
                 $cnt++;
             };
         $obj = new weeclass();
@@ -182,8 +183,8 @@ class CmdrTest extends TestCase
     {
         $cmdr = new Cmdr();
         $cnt = 0;
-        $lol  = function ($pre, $post, $req) use(&$cnt) {
-            $this->assertInstanceOf(Request::class, $req);
+        $lol  = function ($pre, $post, $args) use(&$cnt) {
+            $this->assertInstanceOf(Args::class, $args);
             $this->assertEquals('foobar', $pre);
             $this->assertEquals('moobaz', $post);
             $cnt++;
@@ -199,8 +200,8 @@ class CmdrTest extends TestCase
         $cmdr = new Cmdr();
         $cnt = 0;
 
-        $testFunc = function ($pre, $func, $post, $req) use(&$cnt) {
-            $this->assertInstanceOf(Request::class, $req);
+        $testFunc = function ($pre, $func, $post, $args) use(&$cnt) {
+            $this->assertInstanceOf(Args::class, $args);
             $this->assertEquals('foobar', $pre);
             //php namespace&functions are lowered internally
             $this->assertEquals(strtolower(__namespace__.'\testCallWrap'), $func);
@@ -214,7 +215,7 @@ class CmdrTest extends TestCase
 
 
         $obj = new weeclass();
-        $testFunc = function ($func, $req) use(&$cnt, $obj) {
+        $testFunc = function ($func, $args) use(&$cnt, $obj) {
             //php namespace&functions are lowered internally
             $this->assertEquals([$obj, 'eew'], $func);
             $cnt++;
@@ -271,20 +272,20 @@ function testPriv(...$args) {
 // not sure phpunit supports mocking with attributes yet
 class weeclass {
     #[Cmd('wee')]
-    public function example($req) {
+    public function example($args) {
         global $testFunc;
-        $testFunc($req);
+        $testFunc($args);
     }
 
     #[PrivCmd('weee')]
-    public function pexample($req) {
+    public function pexample($args) {
         global $testFunc;
-        $testFunc($req);
+        $testFunc($args);
     }
 
     #[Cmd('eew')]
     #[CallWrap(__namespace__.'\wrapTestFunc')]
-    public function eew($req) {
+    public function eew($args) {
     }
 }
 

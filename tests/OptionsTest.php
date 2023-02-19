@@ -1,6 +1,7 @@
 <?php
 namespace knivey\cmdr\test;
 
+use knivey\cmdr\Args;
 use knivey\cmdr\attributes\Cmd;
 use knivey\cmdr\attributes\Option;
 use knivey\cmdr\attributes\Options;
@@ -8,7 +9,6 @@ use knivey\cmdr\attributes\Syntax;
 use knivey\cmdr\Cmdr;
 use knivey\cmdr\exceptions\OptAlreadyDefined;
 use knivey\cmdr\exceptions\OptNotFound;
-use knivey\cmdr\Request;
 use PHPUnit\Framework\TestCase;
 
 class OptionsTest extends TestCase
@@ -18,10 +18,10 @@ class OptionsTest extends TestCase
         $cmdr = new Cmdr();
         $obj = new optsA();
         $cmdr->loadMethods($obj);
-        $req = $cmdr->call('testOpts', 'abc def');
-        $this->assertInstanceOf(Request::class, $req);
+        $args = $cmdr->call('testOpts', 'abc def');
+        $this->assertInstanceOf(Args::class, $args);
         $this->expectException(OptNotFound::class);
-        $req->args->getOpt("--nonexists");
+        $args->getOpt("--nonexists");
     }
 
     function testOptionAndOptions()
@@ -30,25 +30,25 @@ class OptionsTest extends TestCase
         $obj = new optsA();
         $cmdr->loadMethods($obj);
 
-        $req = $cmdr->call('testOpts', 'abc def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
+        $args = $cmdr->call('testOpts', 'abc def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
 
 
-        $req = $cmdr->call('testOpts', 'abc --bar def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertTrue($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --bar def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertTrue($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
 
-        $req = $cmdr->call('testOpts', 'abc --baz=hello def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertTrue($req->args->optEnabled("--baz"));
-        $this->assertEquals("hello", $req->args->getOpt("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --baz=hello def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertTrue($args->optEnabled("--baz"));
+        $this->assertEquals("hello", $args->getOpt("--baz"));
     }
 
     function testMultipleOptions()
@@ -57,25 +57,25 @@ class OptionsTest extends TestCase
         $obj = new optsB();
         $cmdr->loadMethods($obj);
 
-        $req = $cmdr->call('testOpts', 'abc --bar def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertTrue($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --bar def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertTrue($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
 
-        $req = $cmdr->call('testOpts', 'abc --baz=hello def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertTrue($req->args->optEnabled("--baz"));
-        $this->assertEquals("hello", $req->args->getOpt("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --baz=hello def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertTrue($args->optEnabled("--baz"));
+        $this->assertEquals("hello", $args->getOpt("--baz"));
 
-        $req = $cmdr->call('testOpts', 'abc --foo=hello def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
-        $this->assertEquals("hello", $req->args->getOpt("--foo"));
+        $args = $cmdr->call('testOpts', 'abc --foo=hello def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
+        $this->assertEquals("hello", $args->getOpt("--foo"));
     }
 
     function testMultipleOption()
@@ -84,25 +84,25 @@ class OptionsTest extends TestCase
         $obj = new optsC();
         $cmdr->loadMethods($obj);
 
-        $req = $cmdr->call('testOpts', 'abc --bar def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertTrue($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --bar def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertTrue($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
 
-        $req = $cmdr->call('testOpts', 'abc --baz=hello def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertTrue($req->args->optEnabled("--baz"));
-        $this->assertEquals("hello", $req->args->getOpt("--baz"));
+        $args = $cmdr->call('testOpts', 'abc --baz=hello def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertTrue($args->optEnabled("--baz"));
+        $this->assertEquals("hello", $args->getOpt("--baz"));
 
-        $req = $cmdr->call('testOpts', 'abc --foo=hello def');
-        $this->assertInstanceOf(Request::class, $req);
-        $this->assertEquals('abc def', $req->args[0]);
-        $this->assertFalse($req->args->optEnabled("--bar"));
-        $this->assertFalse($req->args->optEnabled("--baz"));
-        $this->assertEquals("hello", $req->args->getOpt("--foo"));
+        $args = $cmdr->call('testOpts', 'abc --foo=hello def');
+        $this->assertInstanceOf(Args::class, $args);
+        $this->assertEquals('abc def', $args[0]);
+        $this->assertFalse($args->optEnabled("--bar"));
+        $this->assertFalse($args->optEnabled("--baz"));
+        $this->assertEquals("hello", $args->getOpt("--foo"));
     }
 
     function testRedefineOptionsException()
@@ -126,8 +126,8 @@ class optsA {
     #[Syntax("<foo>...")]
     #[Options("--bar")]
     #[Option("--baz")]
-    function testOpts(Request $req): Request {
-        return $req;
+    function testOpts(Args $args): Args {
+        return $args;
     }
 }
 
@@ -136,8 +136,8 @@ class optsB {
     #[Syntax("<foo>...")]
     #[Options("--bar", "--foo")]
     #[Option("--baz")]
-    function testOpts(Request $req): Request {
-        return $req;
+    function testOpts(Args $args): Args {
+        return $args;
     }
 }
 
@@ -147,8 +147,8 @@ class optsC {
     #[Options("--bar")]
     #[Option("--foo", "foo!")]
     #[Option("--baz", "baz!")]
-    function testOpts(Request $req): Request {
-        return $req;
+    function testOpts(Args $args): Args {
+        return $args;
     }
 }
 
@@ -159,8 +159,8 @@ class optsD {
     #[Option("--foo", "foo!")]
     #[Option("--bar", "bar!")] //redefine exception
     #[Option("--baz")]
-    function testOpts(Request $req): Request {
-        return $req;
+    function testOpts(Args $args): Args {
+        return $args;
     }
 }
 
@@ -171,7 +171,7 @@ class optsF {
     #[Option("--foo", "foo!")]
     #[Option("--foo", "bar!")] //redefine exception
     #[Option("--baz")]
-    function testOpts(Request $req): Request {
-        return $req;
+    function testOpts(Args $args): Args {
+        return $args;
     }
 }

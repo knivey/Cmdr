@@ -31,7 +31,7 @@ $router = new cmdr\Cmdr();
 #[cmdr\attributes\Option("--optionb", "description of option")]
 #[cmdr\attributes\Option("--optionc", "description of option")]
 #[cmdr\attributes\Desc("description of cmd")]
-function exampleFunc($additonal, $arguments, cmdr\Request $request) {
+function exampleFunc($additonal, $arguments, cmdr\Args $request) {
     echo $request->args["required"];
     if(isset($request->args["optional"]))
         echo $request->args["optional"];
@@ -43,7 +43,7 @@ function exampleFunc($additonal, $arguments, cmdr\Request $request) {
 #[cmdr\attributes\Desc("Second example command")]
 #[cmdr\attributes\Syntax("[args]...")] //the ... means it will eat the rest of the arguments "blah blah etc.."
 #[cmdr\attributes\Option("--option", "enable some option")]
-function exampleFunc2($additonal, $arguments, cmdr\Request $request) {
+function exampleFunc2($additonal, $arguments, cmdr\Args $request) {
     // example2 blah blah --option=value
     // example2 blah --option=value blah (args will just have "blah blah")
     // if just --option then its val is true
@@ -54,7 +54,7 @@ function exampleFunc2($additonal, $arguments, cmdr\Request $request) {
 
 #[cmdr\attributes\PrivCmd("example2")]
 #[cmdr\attributes\Desc("Command for private message example command")]
-function exampleFunc2($additonal, $arguments, cmdr\Request $request) {
+function exampleFunc2($additonal, $arguments, cmdr\Args $request) {
 }
 
 //Do this AFTER all functions you want to load are defined
@@ -63,8 +63,8 @@ $router->loadFuncs();
 $router->loadMethods($object);
 
 // This will return what the command function returns
-// Exceptions can be throw if the args given don't pass the syntax
-// Exception also thrown if the command doesnt exist
+// Exceptions will be thrown if the args given don't pass the syntax
+// Exception also thrown if the command doesn't exist
 $router->call('example', 'arguments given to cmd', "additional", "arguments");
 
 //simple example of a fictional IRC chatbot using triggers (!cmd)
@@ -74,7 +74,7 @@ function handleMsg(IRCuser $user, string $target, string $text) {
         $trigger = "!";
         if(substr($text, 0, 1) != $trigger)
             return;
-        $text = substr($args->text, 1);
+        $text = substr($text, 1);
     }
     $text = explode(' ', $text);
     $cmd = array_shift($text);
@@ -82,16 +82,16 @@ function handleMsg(IRCuser $user, string $target, string $text) {
     if(isChan($target)) {
         if($router->cmdExists($cmd)) {
             try {
-                return $router->call($cmd, $text, $args, $bot);
+                return $router->call($cmd, $text, $user);
             } catch (Exception $e) {
-                //Exception may be bad arguments etc.., tell the user
+                //Exception may be bad arguments etc..., tell the user
                 notice($nick, $e->getMessage());
             }
         }
     } else {
         if($router->cmdExistsPriv($cmd)) {
             try {
-                return $router->callPriv($cmd, $text, $args, $bot);
+                return $router->callPriv($cmd, $text, $user);
             } catch (Exception $e) {
                 notice($nick, $e->getMessage());
             }
@@ -129,7 +129,7 @@ function example(cmdr\Request $request) {
 function example2(cmdr\Request $request) {
 }
 
-function someWrapperFunc($one, $two, $three, callable $func, $stuff, cmdr\Request $request) {
+function someWrapperFunc($one, $two, $three, callable $func, $stuff, cmdr\Args $request) {
     return $func($request);
 }
 ```

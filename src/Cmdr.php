@@ -176,7 +176,7 @@ class Cmdr
 	    $req = $this->get($command, $text);
 	    if(!$req)
 	        throw new CmdNotFound($command);
-        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
+        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
         //return call_user_func_array($req->cmd->method, [...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
     }
 
@@ -187,7 +187,7 @@ class Cmdr
         $req = $this->get($command, $text, priv: true);
         if(!$req)
             throw new CmdNotFound($command);
-        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
+        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
     }
 
 }
