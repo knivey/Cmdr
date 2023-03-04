@@ -47,10 +47,36 @@ class Args implements \ArrayAccess, \Countable
         $this->opts = new CIArray();
         foreach ($opts as $opt)
             $this->opts[$opt->option] = $opt;
-        $argv = array_filter(explode(' ', $syntax));
+
+        $argv = [];
+        $offset = 0; // for error position
+        $mode = 0; // 0 arg, 1 whitespace
+        while($offset < strlen($syntax)) {
+            $m = '';
+            //we use substr here because from phpdoc:
+            //Using offset is not equivalent to passing substr($subject, $offset) to preg_match() in place of the subject string, because pattern can contain assertions such as ^, $ or (?<=x).
+            if($mode == 1) {
+                if(!preg_match("/^ +/", substr($syntax, $offset), $m))
+                    break;
+                $offset += strlen($m[0]);
+                $mode = 0;
+            }
+            if($mode == 0) {
+                if(!preg_match('/^(?:(<[^>]+>(?:\.\.\.)?)|(\[[^]]+](?:\.\.\.)?))/', substr($syntax, $offset), $m))
+                    break;
+                $offset += strlen($m[0]);
+                $argv[] = $m[0];
+                $mode = 1;
+            }
+        }
+        if(strlen($syntax) > $offset) {
+            throw new SyntaxException("Invalid syntax: junk detected: \"$syntax\" at offset: $offset");
+        }
         if (count($argv) == 0) {
             return;
         }
+
+
         foreach ($argv as $k => $a) {
             $matched = false;
             if (preg_match('/<([^>]+)>(\.\.\.)?/', $a, $m)) {
@@ -71,7 +97,7 @@ class Args implements \ArrayAccess, \Countable
                 $matched = true;
             }
 
-            if (preg_match('/\[([^>]+)](\.\.\.)?/', $a, $m)) {
+            if (preg_match('/\[([^]]+)](\.\.\.)?/', $a, $m)) {
                 if($m[0] != $a) {
                     throw new SyntaxException("Invalid syntax: problem with $a");
                 }
@@ -99,6 +125,7 @@ class Args implements \ArrayAccess, \Countable
      * @param string $msg
      * @return Args Returns a cloned object
      * @throws ParseException throws exception if required args aren't provided
+     * @throws \Exception
      */
     public function parse(string $msg) : Args {
         $this->parsedOpts = new CIArray();
@@ -129,10 +156,14 @@ class Args implements \ArrayAccess, \Countable
                 $arg->val = $msg;
                 $msg = '';
             } else {
-                if(preg_match('/ ?+([^ ]+) ?+/', $msg, $m)) {
+                if(preg_match('/ *([^ ]+) */', $msg, $m)) {
                     $msg = substr($msg, strlen($m[0]));
                     $arg->val = $m[1];
                 }
+            }
+            if($arg->validator != null) {
+                if(!Validate::runValidation($arg->validator, $arg->val, $arg->validatorArgs))
+                    throw new ParseException("$arg->name did not pass validation: $arg->syntax");
             }
         }
         return clone $this;
@@ -158,6 +189,15 @@ class Args implements \ArrayAccess, \Countable
         if(!$this->optEnabled($name))
             return false;
         return $this->parsedOpts[$name] ?? true;
+    }
+
+    public function getUnparsedArg(int|string $name): ?Arg {
+        foreach ($this->args as &$arg) {
+            if ($arg->name == $name) {
+                return clone $arg;
+            }
+        }
+        return null;
     }
 
     public function getArg(string $name): ?Arg {

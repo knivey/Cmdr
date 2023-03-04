@@ -1,6 +1,8 @@
 <?php
 namespace knivey\cmdr;
 
+use knivey\cmdr\exceptions\ValidatorNotFound;
+
 class Validate {
     private static array $validators = [
         'int' => [self::class, 'int'],
@@ -24,9 +26,9 @@ class Validate {
      * @return bool
      * @throws \Exception
      */
-    static public function custom(string $validator, mixed $value, array $args = []) : bool {
+    static public function runValidation(string $validator, mixed $value, array $args = []) : bool {
         if(!isset(self::$validators[$validator]))
-            throw new \Exception("validator $validator is not valid");
+            throw new ValidatorNotFound("Validator \"$validator\" was not found");
         return call_user_func_array(self::$validators[$validator], [$value, ...$args]);
     }
 
@@ -36,7 +38,7 @@ class Validate {
      * @param array $args
      * @return mixed
      */
-    static public function filter(string $validator, mixed $value, array $args = []) : mixed {
+    static public function runFilter(string $validator, mixed $value, array $args = []) : mixed {
         if(!isset(self::$filters[$validator]))
             return $value;
         $fargs = self::getCallablesArgs(self::$filters[$validator]);

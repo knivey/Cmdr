@@ -10,9 +10,9 @@ use knivey\cmdr\exceptions\SyntaxException;
 
 class Cmdr
 {
-    /** @var CIArray<Cmd>  */
+    /** @var CIArray<string, Cmd>  */
     public CIArray $cmds;
-    /** @var CIArray<Cmd>  */
+    /** @var CIArray<string, Cmd>  */
     public CIArray $privCmds;
 
 	public function __construct()

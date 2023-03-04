@@ -189,11 +189,27 @@ class ArgsTest extends TestCase
 
     function testMultiAfter()
     {
-        $args = new Args('<foo> <moo> <bar>... ');
+        $args = new Args('<foo> <moo> <bar>...');
         $args->parse('test zoo blahr blahz blah');
         $this->assertEquals('test', $args['foo']);
         $this->assertEquals('zoo', $args['moo']);
         $this->assertEquals('blahr blahz blah', $args['bar']);
+    }
+
+    /**
+     * @doesNotPerformAssertions
+     */
+    function testTrailingSpace()
+    {
+        $args = new Args('<foo> <moo> <bar>... ');
+    }
+
+    /**
+     * @doesNotPerformAssertions
+     */
+    function testExtraSpace()
+    {
+        $args = new Args('<foo> <moo>   <bar>... ');
     }
 
     function testMissingSecReqArg()
@@ -227,13 +243,13 @@ class ArgsTest extends TestCase
         $this->expectException(SyntaxException::class);
         $args = new Args('[<arst>]');
     }
-
+/*
     function testInvalidSyntax5()
     {
         $this->expectException(SyntaxException::class);
         $args = new Args('<moo lol>');
     }
-
+*/
     function testInvalidSyntax6()
     {
         $this->expectException(SyntaxException::class);

@@ -109,7 +109,7 @@ To load public methods from a class object use `loadMethods($obj)`
 *  `<arg>...` required multiword arg, must be last in list
 *  `[arg]` is an optional arg, all optionals must be at the end and no multiword arguments preceed them
 *  `[arg]...` optional multiword arg, must be last in list
-* The arg name must not contain `[]<>` or whitespace
+* The arg name must not contain `[]<>`
 
 ### CallWrap
 

@@ -109,19 +109,19 @@ class TestValidations extends TestCase
     public function testCustomValidatorMissing() {
         $validator = "test";
         $this->expectException(\Exception::class);
-        Validate::custom($validator, "moo", ["moo"]);
+        Validate::runValidation($validator, "moo", ["moo"]);
     }
 
     public function testCustomFilterMissing() {
         $validator = "test";
-        $this->assertEquals(Validate::filter($validator,"moo", ["moo"]), "moo");
+        $this->assertEquals(Validate::runFilter($validator,"moo", ["moo"]), "moo");
     }
 
     public function testCustomValidator() {
         Validate::setValidator("test", function($val) {return $val;});
         Validate::setValidator("test2", function($val, $moo) {return $val + $moo;});
-        $this->assertTrue(Validate::custom("test", true));
-        $this->assertTrue(Validate::custom("test2", 0, [1]));
+        $this->assertTrue(Validate::runValidation("test", true));
+        $this->assertTrue(Validate::runValidation("test2", 0, [1]));
     }
 
     public function testCustomFilter() {
@@ -129,7 +129,7 @@ class TestValidations extends TestCase
             if($moo) return strtoupper($val);
             return $val;
         });
-        $this->assertEquals(Validate::custom("test", false, ["moo" => "moo"]), "moo");
-        $this->assertEquals(Validate::custom("test", true, ["moo" => "moo"]), "MOO");
+        $this->assertEquals(Validate::runValidation("test", false, ["moo" => "moo"]), "moo");
+        $this->assertEquals(Validate::runValidation("test", true, ["moo" => "moo"]), "MOO");
     }
 }
