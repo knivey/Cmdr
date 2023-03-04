@@ -10,7 +10,7 @@ use knivey\cmdr\exceptions\ParseException;
 use knivey\cmdr\Validate;
 use PHPUnit\Framework\TestCase;
 
-class TestValidators extends TestCase
+class ValidatorsTest extends TestCase
 {
     public function cmdrProvider(): array {
         $cmdr = new Cmdr();
@@ -70,10 +70,34 @@ class TestValidators extends TestCase
     }
 
     /** @dataProvider cmdrProvider */
+    public function testValidBools(Cmdr $cmdr)
+    {
+        //just doing a few, real testing in validator class
+        $r = $cmdr->call('bools', 'yes');
+        $this->assertTrue($r['arg']);
+        $cmdr->call('bools', 'yes');
+        $this->assertTrue($r['arg']);
+        $cmdr->call('bools', '1');
+        $this->assertTrue($r['arg']);
+        $cmdr->call('bools', 'off');
+        $this->assertFalse($r['arg']);
+        $cmdr->call('bools', 'false');
+        $this->assertFalse($r['arg']);
+    }
+
+    public function testInvalidBool(Cmdr $cmdr)
+    {
+        $this->expectNotToPerformAssertions();
+        $cmdr->call('bools', 'arst');
+    }
+
+    /** @dataProvider cmdrProvider */
     public function testValidChoice(Cmdr $cmdr)
     {
         $this->expectNotToPerformAssertions();
         $cmdr->call('choice', 'one');
+        $cmdr->call('choice', 'two');
+        $cmdr->call('choice', 'three');
     }
 
     /** @dataProvider cmdrProvider */
@@ -93,6 +117,11 @@ class example {
     #[Cmd("choice")]
     #[Syntax("<idx: (one|two|three)>")]
     function fooo($args) {
+        return $args;
+    }
+    #[Cmd("bools")]
+    #[Syntax("<arg: bool>")]
+    function fooof($args) {
         return $args;
     }
 }

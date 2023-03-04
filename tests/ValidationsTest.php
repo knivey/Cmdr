@@ -5,7 +5,7 @@ namespace knivey\cmdr\test;
 use PHPUnit\Framework\TestCase;
 use knivey\cmdr\Validate;
 
-class TestValidations extends TestCase
+class ValidationsTest extends TestCase
 {
     public function testBuiltinIntValidator()
     {
