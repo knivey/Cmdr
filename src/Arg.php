@@ -7,7 +7,7 @@ class Arg {
     public bool $multiword;
     public string $name;
     public string $syntax;
-    public ?string $val = "";
+    public mixed $val = "";
     public ?string $validator = null;
     public array $validatorArgs = [];
     public function __construct(bool $required, string $name, bool $multiword)
@@ -42,6 +42,6 @@ class Arg {
 
     public function __toString()
     {
-        return $this->val;
+        return (string)$this->val;
     }
 }

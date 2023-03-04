@@ -75,19 +75,20 @@ class ValidatorsTest extends TestCase
         //just doing a few, real testing in validator class
         $r = $cmdr->call('bools', 'yes');
         $this->assertTrue($r['arg']);
-        $cmdr->call('bools', 'yes');
+        $r = $cmdr->call('bools', 'yes');
         $this->assertTrue($r['arg']);
-        $cmdr->call('bools', '1');
+        $r = $cmdr->call('bools', '1');
         $this->assertTrue($r['arg']);
-        $cmdr->call('bools', 'off');
+        $r = $cmdr->call('bools', 'off');
         $this->assertFalse($r['arg']);
-        $cmdr->call('bools', 'false');
+        $r = $cmdr->call('bools', 'false');
         $this->assertFalse($r['arg']);
     }
 
+    /** @dataProvider cmdrProvider */
     public function testInvalidBool(Cmdr $cmdr)
     {
-        $this->expectNotToPerformAssertions();
+        $this->expectException(ParseException::class);
         $cmdr->call('bools', 'arst');
     }
 

@@ -162,11 +162,9 @@ class Validate {
      * @return bool
      */
     static function asBool($val) : bool {
-        if(is_numeric($val))
+        if(is_numeric($val) || is_bool($val))
             return (bool)($val+0);
         $val = strtolower($val);
-        if(in_array($val, ["yes", "on", "true"]))
-            return true;
-        return false;
+        return in_array($val, ["yes", "on", "true"]);
     }
 }

@@ -145,6 +145,7 @@ Validators can also filter/normalize inputs, for example bool can take "yes" and
 * Arguments can only have one validation applied to them.
 * The Validate class provides some default validators and custom validators can be registsered.
 * Validator args must not have spaces, `<arg: int min = 0>` would be an error.
+* Validator/filter args should not be named `val`, that'n conventionally used as the first function argument.
 ### Built in validators
 #### uint, int, number
 These all do what you would expect, check for types of numeric values.

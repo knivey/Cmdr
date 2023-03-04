@@ -81,7 +81,6 @@ class ArgsTest extends TestCase
         $this->assertEquals('boo', $args[1]);
         $this->assertEquals('poo', $args['a_r']);
         $this->assertEquals('poo', $args[2]);
-        $this->assertEquals(null, $args[5]);
         $this->assertTrue(isset($args['a_r']));
         $this->assertFalse(isset($args['f']));
         $this->assertFalse(isset($args[9]));
@@ -99,6 +98,14 @@ class ArgsTest extends TestCase
         $args->parse('moo boo poo');
         $this->expectException(BadArgName::class);
         $this->assertEquals(null, $args['a']);
+    }
+
+    function testBadArgnameAccessIdx()
+    {
+        $args = new Args("<Account> <barf> [a_r]");
+        $args->parse('moo boo poo');
+        $this->expectException(BadArgName::class);
+        $this->assertEquals(null, $args[3]);
     }
 
     function testReqMultiword()

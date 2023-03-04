@@ -106,6 +106,21 @@ class ValidationsTest extends TestCase
         }
     }
 
+    public function testBoolFilters() {
+        foreach(self::$falses as $val) {
+            $this->assertFalse(Validate::asBool($val), "Tested Value: " . \json_encode($val));
+            if(is_string($val))
+                $val = strtoupper($val);
+            $this->assertFalse(Validate::asBool($val), "Tested Value: " . \json_encode($val));
+        }
+        foreach(self::$trues as $val) {
+            $this->assertTrue(Validate::asBool($val), "Tested Value: " . \json_encode($val));
+            if(is_string($val))
+                $val = strtoupper($val);
+            $this->assertTrue(Validate::asBool($val), "Tested Value: " . \json_encode($val));
+        }
+    }
+
     public function testCustomValidatorMissing() {
         $validator = "test";
         $this->expectException(\Exception::class);
@@ -125,10 +140,13 @@ class ValidationsTest extends TestCase
     }
 
     public function testCustomFilter() {
-        Validate::setFilter("test", function($val, $moo) {
+        //Must have matching validator
+        Validate::setValidator("test", fn ($val, $moo) => true);
+        Validate::setFilter("test", function ($val, $moo) {
             if($moo) return strtoupper($val);
             return $val;
         });
+
         $this->assertEquals(Validate::runValidation("test", false, ["moo" => "moo"]), "moo");
         $this->assertEquals(Validate::runValidation("test", true, ["moo" => "moo"]), "MOO");
     }

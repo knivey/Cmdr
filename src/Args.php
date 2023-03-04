@@ -174,7 +174,8 @@ class Args implements \ArrayAccess, \Countable
             }
             if($arg->validator != null) {
                 if(!Validate::runValidation($arg->validator, $arg->val, $arg->validatorArgs))
-                    throw new ParseException("$arg->name did not pass validation: $arg->syntax");
+                    throw new ParseException("argument \"$arg->name\" did not pass validation: $arg->syntax");
+                $arg->val = Validate::runFilter($arg->validator, $arg->val, $arg->validatorArgs);
             }
         }
         return clone $this;
@@ -233,7 +234,7 @@ class Args implements \ArrayAccess, \Countable
     public function getArg(string $name): ?Arg {
         foreach ($this->parsed as &$arg) {
             if ($arg->name == $name) {
-                if($arg->val == null) {
+                if($arg->val === null || $arg->val === '') {
                     return null;
                 }
                 return $arg;
@@ -248,10 +249,10 @@ class Args implements \ArrayAccess, \Countable
     }
     public function offsetExists($offset): bool {
         if(is_numeric($offset)) {
-            return isset($this->parsed[$offset]) && $this->parsed[$offset]->val != null;
+            return isset($this->parsed[$offset]) && ($this->parsed[$offset]->val !== null && $this->parsed[$offset]->val !== '');
         }
         foreach ($this->parsed as &$arg) {
-            if ($arg->name == $offset && $arg->val != null) {
+            if ($arg->name == $offset && ($arg->val !== null && $arg->val !== '')) {
                 return true;
             }
         }
@@ -260,12 +261,16 @@ class Args implements \ArrayAccess, \Countable
     public function offsetUnset($offset): void {
         return;
     }
-    public function offsetGet($offset): ?string {
+
+    /**
+     * @throws BadArgName
+     */
+    public function offsetGet($offset): mixed {
         if(is_numeric($offset)) {
-            if(isset($this->parsed[$offset]) && $this->parsed[$offset]->val != null) {
+            if(isset($this->parsed[$offset])) {
                 return $this->parsed[$offset]->val;
             }
-            return null;
+            throw new BadArgName("Argument index $offset hasn't been defined. Syntax: {$this->syntax}");
         }
         $arg = $this->getArg($offset);
         return $arg?->val;
