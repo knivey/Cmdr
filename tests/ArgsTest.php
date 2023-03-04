@@ -3,6 +3,7 @@
 namespace knivey\cmdr\test;
 
 use knivey\cmdr\Args;
+use knivey\cmdr\exceptions\BadArgName;
 use knivey\cmdr\exceptions\ParseException;
 use knivey\cmdr\exceptions\SyntaxException;
 use knivey\cmdr\Option;
@@ -80,7 +81,6 @@ class ArgsTest extends TestCase
         $this->assertEquals('boo', $args[1]);
         $this->assertEquals('poo', $args['a_r']);
         $this->assertEquals('poo', $args[2]);
-        $this->assertEquals(null, $args['a']);
         $this->assertEquals(null, $args[5]);
         $this->assertTrue(isset($args['a_r']));
         $this->assertFalse(isset($args['f']));
@@ -91,6 +91,14 @@ class ArgsTest extends TestCase
         $this->assertEquals(null, $args['a_r']);
         $this->assertFalse(isset($args[2]));
         $this->assertEquals(null, $args[2]);
+    }
+
+    function testBadArgnameAccess()
+    {
+        $args = new Args("<Account> <barf> [a_r]");
+        $args->parse('moo boo poo');
+        $this->expectException(BadArgName::class);
+        $this->assertEquals(null, $args['a']);
     }
 
     function testReqMultiword()

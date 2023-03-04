@@ -2,6 +2,7 @@
 namespace knivey\cmdr;
 
 
+use knivey\cmdr\exceptions\BadArgName;
 use knivey\cmdr\exceptions\OptNotFound;
 use knivey\cmdr\exceptions\ParseException;
 use knivey\cmdr\exceptions\SyntaxException;
@@ -29,10 +30,15 @@ class Args implements \ArrayAccess, \Countable
     protected array $parsed = Array();
 
     /**
-     * @var CIArray $parsedOpts
+     * Options that were found in parsing command
+     * @var CIArray<Option>
      */
     protected CIArray $parsedOpts;
 
+    /**
+     * Possible options
+     * @var CIArray<Option>
+     */
     protected CIArray $opts;
     /**
      * constructor.
@@ -116,6 +122,11 @@ class Args implements \ArrayAccess, \Countable
         }
     }
 
+    /**
+     * Check if an option is settable
+     * @param string $name
+     * @return bool
+     */
     protected function findOpt(string $name): bool {
         return isset($this->opts[$name]);
     }
@@ -169,20 +180,28 @@ class Args implements \ArrayAccess, \Countable
         return clone $this;
     }
 
+    /**
+     * Get all options passed to command
+     * @return CIArray<Option>
+     */
     public function getOpts(): CIArray {
-        return $this->parsedOpts;
+        return clone $this->parsedOpts;
     }
 
     /**
+     * Checks if an option was passed to the command
+     * @param string $name
+     * @return bool
      * @throws OptNotFound
      */
-    public function optEnabled($name): bool {
+    public function optEnabled(string $name): bool {
         if(!$this->findOpt($name))
             throw new OptNotFound($name);
         return isset($this->parsedOpts[$name]);
     }
 
     /**
+     * Gets the value of an option passed to a command, if the option was given no =val then it will be true.
      * @throws OptNotFound
      */
     public function getOpt($name) {
@@ -191,7 +210,12 @@ class Args implements \ArrayAccess, \Countable
         return $this->parsedOpts[$name] ?? true;
     }
 
-    public function getUnparsedArg(int|string $name): ?Arg {
+    /**
+     * Gets an Arg if no parsing has been done yet, useful in testing
+     * @param string $name
+     * @return Arg|null
+     */
+    public function getUnparsedArg(string $name): ?Arg {
         foreach ($this->args as &$arg) {
             if ($arg->name == $name) {
                 return clone $arg;
@@ -200,6 +224,12 @@ class Args implements \ArrayAccess, \Countable
         return null;
     }
 
+    /**
+     * Gets an argument value after having parsed a command request, returns null if that arg wasn't passed.
+     * @param string $name
+     * @return Arg|null
+     * @throws BadArgName
+     */
     public function getArg(string $name): ?Arg {
         foreach ($this->parsed as &$arg) {
             if ($arg->name == $name) {
@@ -209,7 +239,7 @@ class Args implements \ArrayAccess, \Countable
                 return $arg;
             }
         }
-        return null;
+        throw new BadArgName("Argument $name hasn't been defined. Syntax: {$this->syntax}");
     }
 
     //Readonly

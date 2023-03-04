@@ -8,11 +8,20 @@ use knivey\cmdr\exceptions\CmdNotFound;
 use knivey\cmdr\exceptions\OptAlreadyDefined;
 use knivey\cmdr\exceptions\SyntaxException;
 
+/**
+ * Main class to use Cmdr
+ */
 class Cmdr
 {
-    /** @var CIArray<string, Cmd>  */
+    /**
+     * Holds public commands (inside irc channel)
+     * @var CIArray<string, Cmd>
+     */
     public CIArray $cmds;
-    /** @var CIArray<string, Cmd>  */
+    /**
+     * Holds private commands (private irc message)
+     * @var CIArray<string, Cmd>
+     */
     public CIArray $privCmds;
 
 	public function __construct()
@@ -22,6 +31,7 @@ class Cmdr
     }
 
     /**
+     * Manually add a command, typically you would use attributes and loading instead of this.
      * @throws BadCmdName
      * @throws CmdAlreadyExists
      * @throws SyntaxException
@@ -47,7 +57,14 @@ class Cmdr
         }
     }
 
-    function get(string $command, string $text, $priv = false) : Request|false {
+    /**
+     * Gets a Request object for a command of false if not found
+     * @param string $command
+     * @param string $text argument string passed to command
+     * @param bool $priv Is the command a private command?
+     * @return Request|false
+     */
+    function get(string $command, string $text, bool $priv = false) : Request|false {
 	    if(!$priv) {
             if (!isset($this->cmds[$command])) {
                 return false;
@@ -64,6 +81,7 @@ class Cmdr
     }
 
     /**
+     * Loads all commands from an object by looking for attributes on public methods
      * @throws OptAlreadyDefined|SyntaxException
      */
     function loadMethods(object $obj): void {
@@ -149,6 +167,7 @@ class Cmdr
     }
 
     /**
+     * Loads commands by looking for attributes on all currently defined functions, namespaced function load correctly as well
      * @throws \ReflectionException
      * @throws OptAlreadyDefined
      * @throws SyntaxException
@@ -161,15 +180,30 @@ class Cmdr
         }
     }
 
+    /**
+     * Checks if a public command exists
+     * @param string $command
+     * @return bool
+     */
     function cmdExists(string $command): bool {
         return isset($this->cmds[$command]);
     }
 
+    /**
+     * Checks if a private command exists
+     * @param string $command
+     * @return bool
+     */
     function cmdExistsPriv(string $command): bool {
         return isset($this->privCmds[$command]);
     }
 
     /**
+     * Calls the function/method for a public command
+     * @param string $command Command name
+     * @param string $text Text passed to the command
+     * @param mixed $extraArgs,... Any additional arguments to pass
+     * @return mixed Returns whatever the function/method did
      * @throws CmdNotFound
      */
     function call(string $command, string $text, ...$extraArgs) {
@@ -181,6 +215,11 @@ class Cmdr
     }
 
     /**
+     * Calls the function/method for a private command
+     * @param string $command Command name
+     * @param string $text Text passed to the command
+     * @param mixed $extraArgs,... Any additional arguments to pass
+     * @return mixed Returns whatever the function/method did
      * @throws CmdNotFound
      */
     function callPriv(string $command, string $text, ...$extraArgs) {
