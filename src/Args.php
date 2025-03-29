@@ -203,6 +203,7 @@ class Args implements \ArrayAccess, \Countable
 
     /**
      * Gets the value of an option passed to a command, if the option was given no =val then it will be true.
+     * If the option was not passed then return is false.
      * @throws OptNotFound
      */
     public function getOpt($name) {
