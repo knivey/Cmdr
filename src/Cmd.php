@@ -14,6 +14,12 @@ class Cmd
      * @var Closure(): TReturn
      */
     readonly public Closure $method;
+    /**
+     * Middleware declarations collected from attributes at load time.
+     * Aliases are resolved lazily at call time via Cmdr::resolveMiddleware().
+     * @var array<int, array{name: string, args: array}>
+     */
+    public array $attrMiddleware = [];
 
     /**
      * @param string $command
@@ -23,6 +29,7 @@ class Cmd
      * @param string $syntax
      * @param Option[] $opts
      * @param string $desc
+     * @param array<int, array{name: string, args: array}> $attrMiddleware
      * @throws SyntaxException
      */
     public function __construct(
@@ -32,11 +39,13 @@ class Cmd
         public array $postArgs,
         public string $syntax,
         public array $opts,
-        public string $desc = "No description"
+        public string $desc = "No description",
+        array $attrMiddleware = [],
     )
     {
         $this->method = $method(...);
         $this->cmdArgs = new Args($syntax, $opts);
+        $this->attrMiddleware = $attrMiddleware;
     }
 
     /**
