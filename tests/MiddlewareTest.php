@@ -114,4 +114,24 @@ class MiddlewareTest extends TestCase
         $this->assertSame('ran', $req->cmd->call($req->args));
         $this->assertFalse($hit);
     }
+
+    public function testPerCommandMiddlewareCaseInsensitive(): void
+    {
+        $hit = false;
+        $cmdr = new Cmdr();
+        $cmdr->addMiddleware(function (Request $r, callable $next) use (&$hit) { $hit = true; return $next($r); }, 'hello');
+        $cmdr->add('hello', fn(...$a) => 'ran', syntax: '');
+        $this->assertSame('ran', $cmdr->call('HELLO', ''));
+        $this->assertTrue($hit);
+    }
+
+    public function testPerCommandMiddlewareCaseInsensitivePriv(): void
+    {
+        $hit = false;
+        $cmdr = new Cmdr();
+        $cmdr->addMiddleware(function (Request $r, callable $next) use (&$hit) { $hit = true; return $next($r); }, 'hello');
+        $cmdr->add('hello', fn(...$a) => 'ran', syntax: '', priv: true);
+        $this->assertSame('ran', $cmdr->callPriv('HELLO', ''));
+        $this->assertTrue($hit);
+    }
 }

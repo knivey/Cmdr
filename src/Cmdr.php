@@ -57,7 +57,7 @@ class Cmdr
         if ($command === null) {
             $this->globalMiddleware[] = $middleware;
         } else {
-            $this->cmdMiddleware[$command][] = $middleware;
+            $this->cmdMiddleware[strtolower($command)][] = $middleware;
         }
     }
 
@@ -240,6 +240,8 @@ class Cmdr
     /**
      * Runs the middleware chain around the command invocation. $entries is a
      * list of [callable $middleware, array $args] pairs in run order.
+     * @param Request $req
+     * @param array<int, mixed> $extraArgs
      * @param array<int, array{0: callable, 1: array}> $entries
      */
     protected function runPipeline(Request $req, array $extraArgs, array $entries): mixed
@@ -267,7 +269,7 @@ class Cmdr
 	        throw new CmdNotFound($command);
         $entries = [];
         foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
-        foreach ($this->cmdMiddleware[$command] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        foreach ($this->cmdMiddleware[strtolower($command)] ?? [] as $mw) { $entries[] = [$mw, []]; }
         if ($entries === []) {
             return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
         }
@@ -289,7 +291,7 @@ class Cmdr
             throw new CmdNotFound($command);
         $entries = [];
         foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
-        foreach ($this->cmdMiddleware[$command] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        foreach ($this->cmdMiddleware[strtolower($command)] ?? [] as $mw) { $entries[] = [$mw, []]; }
         if ($entries === []) {
             return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
         }
