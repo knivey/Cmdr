@@ -14,6 +14,12 @@ class Cmd
      * @var Closure(): TReturn
      */
     readonly public Closure $method;
+    /**
+     * Middlewares requested via attributes on the command method, resolved
+     * by name at call time. Populated by the attribute loading layer.
+     * @var array<int, mixed>
+     */
+    public array $attrMiddleware = [];
 
     /**
      * @param string $command

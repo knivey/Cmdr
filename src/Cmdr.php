@@ -31,6 +31,45 @@ class Cmdr
     }
 
     /**
+     * Global middlewares, run in registration order before per-command ones.
+     * Middleware signature: fn(Request $req, callable $next, mixed ...$args): mixed
+     * @var array<int, callable>
+     */
+    public array $globalMiddleware = [];
+    /**
+     * Per-command middlewares by command name.
+     * @var array<string, array<int, callable>>
+     */
+    public array $cmdMiddleware = [];
+    /**
+     * Named middleware aliases resolvable from attributes.
+     * @var array<string, callable>
+     */
+    public array $middlewareAliases = [];
+
+    /**
+     * Register a middleware. Without $command it runs globally (registration
+     * order); with $command it runs only for that command (both public and
+     * private instances of the name).
+     */
+    function addMiddleware(callable $middleware, ?string $command = null): void
+    {
+        if ($command === null) {
+            $this->globalMiddleware[] = $middleware;
+        } else {
+            $this->cmdMiddleware[$command][] = $middleware;
+        }
+    }
+
+    /**
+     * Register a named middleware that attributes can reference by name.
+     */
+    function aliasMiddleware(string $name, callable $middleware): void
+    {
+        $this->middlewareAliases[$name] = $middleware;
+    }
+
+    /**
      * Manually add a command, typically you would use attributes and loading instead of this.
      * @throws BadCmdName
      * @throws CmdAlreadyExists
@@ -199,6 +238,22 @@ class Cmdr
     }
 
     /**
+     * Runs the middleware chain around the command invocation. $entries is a
+     * list of [callable $middleware, array $args] pairs in run order.
+     * @param array<int, array{0: callable, 1: array}> $entries
+     */
+    protected function runPipeline(Request $req, array $extraArgs, array $entries): mixed
+    {
+        $invoke = fn(Request $r): mixed => $r->cmd->call(...[...$r->cmd->preArgs, ...$r->cmd->postArgs, ...$r->extraArgs, $r->args]);
+        $req->extraArgs = $extraArgs;
+        foreach (array_reverse($entries) as [$middleware, $args]) {
+            $next = $invoke;
+            $invoke = fn(Request $r): mixed => $middleware($r, $next, ...$args);
+        }
+        return $invoke($req);
+    }
+
+    /**
      * Calls the function/method for a public command
      * @param string $command Command name
      * @param string $text Text passed to the command
@@ -210,7 +265,13 @@ class Cmdr
 	    $req = $this->get($command, $text);
 	    if(!$req)
 	        throw new CmdNotFound($command);
-        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
+        $entries = [];
+        foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
+        foreach ($this->cmdMiddleware[$command] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        if ($entries === []) {
+            return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
+        }
+        return $this->runPipeline($req, $extraArgs, $entries);
         //return call_user_func_array($req->cmd->method, [...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req]);
     }
 
@@ -226,7 +287,13 @@ class Cmdr
         $req = $this->get($command, $text, priv: true);
         if(!$req)
             throw new CmdNotFound($command);
-        return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
+        $entries = [];
+        foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
+        foreach ($this->cmdMiddleware[$command] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        if ($entries === []) {
+            return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
+        }
+        return $this->runPipeline($req, $extraArgs, $entries);
     }
 
 }
