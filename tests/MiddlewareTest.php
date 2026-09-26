@@ -2,6 +2,7 @@
 namespace knivey\cmdr\test;
 
 use knivey\cmdr\Cmdr;
+use knivey\cmdr\exceptions\MiddlewareNotFound;
 use knivey\cmdr\Request;
 use PHPUnit\Framework\TestCase;
 
@@ -133,5 +134,150 @@ class MiddlewareTest extends TestCase
         $cmdr->add('hello', fn(...$a) => 'ran', syntax: '', priv: true);
         $this->assertSame('ran', $cmdr->callPriv('HELLO', ''));
         $this->assertTrue($hit);
+    }
+
+    public function testCmdMiddlewareAttributeRunsAliasedMiddlewareWithArgs(): void
+    {
+        $cmdr = new Cmdr();
+        $gotArgs = null;
+        $cmdr->aliasMiddleware('gate', function (Request $r, callable $next, ...$mwArgs) use (&$gotArgs) {
+            $gotArgs = $mwArgs;
+            if ($mwArgs[0] !== 'ok') return 'denied';
+            return $next($r);
+        });
+        $cmdr->add('hello', #[\knivey\cmdr\attributes\Cmd('hello')]
+            #[\knivey\cmdr\attributes\CmdMiddleware('gate', 'ok')]
+            fn(...$a) => 'ran');
+        $this->assertSame('ran', $cmdr->call('hello', ''));
+        $this->assertSame(['ok'], $gotArgs);
+    }
+
+    public function testCustomMiddlewareAttributeImplementingInterface(): void
+    {
+        $gotArgs = null;
+        $cmdr = new Cmdr();
+        $cmdr->aliasMiddleware('acl', function (Request $r, callable $next, ...$mwArgs) use (&$gotArgs) {
+            $gotArgs = $mwArgs;
+            return $next($r);
+        });
+        $cmdr->add('sec', #[\knivey\cmdr\attributes\Cmd('sec')]
+            #[Acl('admin')]
+            fn(...$a) => 'ran');
+        $this->assertSame('ran', $cmdr->call('sec', ''));
+        $this->assertSame(['admin'], $gotArgs);
+    }
+
+    public function testUnknownMiddlewareAliasThrowsAtCallTime(): void
+    {
+        $cmdr = new Cmdr();
+        $cmdr->add('nope', #[\knivey\cmdr\attributes\Cmd('nope')]
+            #[\knivey\cmdr\attributes\CmdMiddleware('ghost')]
+            fn(...$a) => 'ran');
+        $this->expectException(MiddlewareNotFound::class);
+        $this->expectExceptionMessage("middleware 'ghost' is not registered");
+        $cmdr->call('nope', '');
+    }
+
+    public function testAttrMiddlewareAliasResolutionIsLazy(): void
+    {
+        $ran = false;
+        $cmdr = new Cmdr();
+        // Register the command before its alias exists: resolution must be
+        // deferred to call time, so calling now surfaces MiddlewareNotFound.
+        $cmdr->add('late', #[\knivey\cmdr\attributes\Cmd('late')]
+            #[\knivey\cmdr\attributes\CmdMiddleware('gate', 'ok')]
+            fn(...$a) => $ran = true);
+        try {
+            $cmdr->call('late', '');
+            $this->fail('Expected MiddlewareNotFound before the alias was registered');
+        } catch (MiddlewareNotFound) {
+        }
+        $this->assertFalse($ran);
+        $cmdr->aliasMiddleware('gate', fn(Request $r, callable $next, ...$a) => $next($r));
+        $this->assertTrue($cmdr->call('late', ''));
+    }
+
+    public function testRepeatableCmdMiddlewareRunsInDeclarationOrder(): void
+    {
+        $order = [];
+        $cmdr = new Cmdr();
+        $cmdr->aliasMiddleware('m1', function (Request $r, callable $next) use (&$order) { $order[] = 'm1'; return $next($r); });
+        $cmdr->aliasMiddleware('m2', function (Request $r, callable $next) use (&$order) { $order[] = 'm2'; return $next($r); });
+        $cmdr->add('rep', #[\knivey\cmdr\attributes\Cmd('rep')]
+            #[\knivey\cmdr\attributes\CmdMiddleware('m1')]
+            #[\knivey\cmdr\attributes\CmdMiddleware('m2')]
+            fn(...$a) => 'ran');
+        $this->assertSame('ran', $cmdr->call('rep', ''));
+        $this->assertSame(['m1', 'm2'], $order);
+    }
+
+    public function testLoadFuncsCollectsAttrMiddleware(): void
+    {
+        $gotArgs = null;
+        $cmdr = new Cmdr();
+        $cmdr->aliasMiddleware('gate', function (Request $r, callable $next, ...$mwArgs) use (&$gotArgs) {
+            $gotArgs = $mwArgs;
+            if ($mwArgs[0] !== 'ok') return 'denied';
+            return $next($r);
+        });
+        $cmdr->loadFuncs();
+        $this->assertSame('ran', $cmdr->call('mwTestHello', ''));
+        $this->assertSame(['ok'], $gotArgs);
+    }
+
+    public function testLoadMethodsCollectsAttrMiddleware(): void
+    {
+        $gotArgs = null;
+        $cmdr = new Cmdr();
+        $cmdr->aliasMiddleware('gate', function (Request $r, callable $next, ...$mwArgs) use (&$gotArgs) {
+            $gotArgs = $mwArgs;
+            return $next($r);
+        });
+        $cmdr->loadMethods(new mwWeeClass());
+        $this->assertSame('ran', $cmdr->call('mwWee', ''));
+        $this->assertSame(['ok'], $gotArgs);
+    }
+
+    public function testReregistrationKeepsFreshAttrMiddleware(): void
+    {
+        $cmdr = new Cmdr();
+        $cmdr->aliasMiddleware('gate', fn(Request $r, callable $next, ...$a) => $next($r));
+        $cmdr->loadFuncs(); // registers mwTestHello carrying one #[CmdMiddleware('gate', 'ok')]
+        $this->assertCount(1, $cmdr->cmds['mwTestHello']->attrMiddleware);
+        $cmdr->loadFuncs(); // re-registration must replace the Cmd, not stack middleware
+        $this->assertCount(1, $cmdr->cmds['mwTestHello']->attrMiddleware);
+        $this->assertSame('ran', $cmdr->call('mwTestHello', ''));
+
+        // loadFuncs() then add(): manual re-registration keeps a fresh Cmd too
+        unset($cmdr->cmds['mwTestHello']);
+        $cmdr->add('mwTestHello', fn(...$a) => 'ran2',
+            attrMiddleware: [['name' => 'gate', 'args' => ['ok']]]);
+        $this->assertCount(1, $cmdr->cmds['mwTestHello']->attrMiddleware);
+        $this->assertSame('ran2', $cmdr->call('mwTestHello', ''));
+    }
+}
+
+#[\knivey\cmdr\attributes\Cmd('mwTestHello')]
+#[\knivey\cmdr\attributes\CmdMiddleware('gate', 'ok')]
+function mwTestHello(...$args) {
+    return 'ran';
+}
+
+#[\Attribute(\Attribute::IS_REPEATABLE | \Attribute::TARGET_FUNCTION | \Attribute::TARGET_METHOD)]
+class Acl implements \knivey\cmdr\MiddlewareAttribute
+{
+    public function __construct(public string $role)
+    {
+    }
+
+    public function name(): string { return 'acl'; }
+    public function args(): array { return [$this->role]; }
+}
+
+class mwWeeClass {
+    #[\knivey\cmdr\attributes\Cmd('mwWee')]
+    #[\knivey\cmdr\attributes\CmdMiddleware('gate', 'ok')]
+    public function wee(...$args) {
+        return 'ran';
     }
 }

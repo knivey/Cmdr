@@ -76,23 +76,27 @@ class Cmdr
      * @throws SyntaxException
      */
     function add(string $command, callable $method, array $preArgs = [], array $postArgs = [], string $syntax = '',
-                 array $opts = [], bool $priv = false, string $desc = "No description"): void {
+                 array $opts = [], bool $priv = false, string $desc = "No description",
+                 array $attrMiddleware = []): void {
         if (str_contains($command, '#')) {
             throw new BadCmdName('Command name cannot contain #');
         }
         if (str_contains($command, ' ')) {
             throw new BadCmdName('Command name cannot contain space');
         }
+        if ($method instanceof \Closure) {
+            $attrMiddleware = [...$attrMiddleware, ...$this->collectAttrMiddleware(new \ReflectionFunction($method))];
+        }
         if(!$priv) {
             if (isset($this->cmds[$command])) {
                 throw new CmdAlreadyExists("Command $command already exists");
             }
-            $this->cmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc);
+            $this->cmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc, $attrMiddleware);
         } else {
             if (isset($this->privCmds[$command])) {
                 throw new CmdAlreadyExists("Command already exists");
             }
-            $this->privCmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc);
+            $this->privCmds[$command] = new Cmd($command, $method, $preArgs, $postArgs, $syntax, $opts, $desc, $attrMiddleware);
         }
     }
 
@@ -188,6 +192,8 @@ class Cmdr
             }
         }
 
+        $attrMiddleware = $this->collectAttrMiddleware($rf);
+
         $desc = "No description";
         $descAttr = $rf->getAttributes(attributes\Desc::class);
         if(isset($descAttr[0]))
@@ -195,14 +201,56 @@ class Cmdr
 
         if($pub) {
             foreach ($cmdAttr->args as $command) {
-                $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax, $opts, $desc);
+                $this->cmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax, $opts, $desc, $attrMiddleware);
             }
         }
         if($priv) {
             foreach ($privCmdAttr->args as $command) {
-                $this->privCmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax, $opts, $desc);
+                $this->privCmds[$command] = new Cmd($command, $f, $callWrapperPre, $callWrapperPost, $syntax, $opts, $desc, $attrMiddleware);
             }
         }
+    }
+
+    /**
+     * Collects middleware declarations from attributes on a function or
+     * method. #[CmdMiddleware] instances are collected first, then any other
+     * attribute implementing MiddlewareAttribute (excluding CmdMiddleware
+     * itself to avoid double-collection).
+     * @param \ReflectionFunctionAbstract $rf
+     * @return array<int, array{name: string, args: array}>
+     */
+    protected function collectAttrMiddleware(\ReflectionFunctionAbstract $rf): array
+    {
+        $attrMiddleware = [];
+        foreach ($rf->getAttributes(attributes\CmdMiddleware::class) as $attr) {
+            $m = $attr->newInstance();
+            $attrMiddleware[] = ['name' => $m->name(), 'args' => $m->args()];
+        }
+        foreach ($rf->getAttributes() as $attr) {
+            if (!is_subclass_of($attr->getName(), MiddlewareAttribute::class)) {
+                continue;
+            }
+            if ($attr->getName() === attributes\CmdMiddleware::class) {
+                continue; // already collected above
+            }
+            $m = $attr->newInstance();
+            $attrMiddleware[] = ['name' => $m->name(), 'args' => $m->args()];
+        }
+        return $attrMiddleware;
+    }
+
+    /**
+     * Resolves an attribute middleware declaration to its registered
+     * callable. Aliases are resolved at call time so commands may be loaded
+     * before their middleware aliases are registered.
+     * @param array{name: string, args: array} $mw
+     */
+    protected function resolveMiddleware(array $mw): callable
+    {
+        if (!isset($this->middlewareAliases[$mw['name']])) {
+            throw new exceptions\MiddlewareNotFound("middleware '{$mw['name']}' is not registered");
+        }
+        return $this->middlewareAliases[$mw['name']];
     }
 
     /**
@@ -270,6 +318,7 @@ class Cmdr
         $entries = [];
         foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
         foreach ($this->cmdMiddleware[strtolower($command)] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        foreach ($req->cmd->attrMiddleware ?? [] as $mw) { $entries[] = [$this->resolveMiddleware($mw), $mw['args']]; }
         if ($entries === []) {
             return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
         }
@@ -292,6 +341,7 @@ class Cmdr
         $entries = [];
         foreach ($this->globalMiddleware as $mw) { $entries[] = [$mw, []]; }
         foreach ($this->cmdMiddleware[strtolower($command)] ?? [] as $mw) { $entries[] = [$mw, []]; }
+        foreach ($req->cmd->attrMiddleware ?? [] as $mw) { $entries[] = [$this->resolveMiddleware($mw), $mw['args']]; }
         if ($entries === []) {
             return $req->cmd->call(...[...$req->cmd->preArgs, ...$req->cmd->postArgs, ...$extraArgs, $req->args]);
         }
